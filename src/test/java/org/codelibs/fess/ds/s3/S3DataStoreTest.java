@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,13 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.sample;
+package org.codelibs.fess.ds.s3;
 
-import org.codelibs.fess.ds.sample.SampleDataStore;
 import org.codelibs.fess.util.ComponentUtil;
-import org.dbflute.utflute.lastadi.ContainerTestCase;
+import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
 
-public class SampleDataStoreTest extends ContainerTestCase {
-    public SampleDataStore dataStore;
+public class S3DataStoreTest extends LastaFluteTestCase {
+    public S3DataStore dataStore;
 
     @Override
     protected String prepareConfigFile() {
@@ -35,7 +34,7 @@ public class SampleDataStoreTest extends ContainerTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        dataStore = new SampleDataStore();
+        dataStore = new S3DataStore();
     }
 
     @Override
