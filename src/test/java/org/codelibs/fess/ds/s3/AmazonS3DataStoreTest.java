@@ -43,8 +43,9 @@ public class AmazonS3DataStoreTest extends LastaFluteTestCase {
         super.tearDown();
     }
 
-    public void test_xxx() {
-        // TODO
-        assertTrue(true);
+    public void test_getUrl() throws Exception {
+        assertEquals("https://fess.s3-ap-northeast-1.amazonaws.com/dir/d%20i%20r/sample.txt",
+                dataStore.getUrl("ap-northeast-1", "fess", "dir/d i r/sample.txt"));
     }
+
 }

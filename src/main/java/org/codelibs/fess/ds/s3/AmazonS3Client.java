@@ -44,7 +44,8 @@ public class AmazonS3Client implements AutoCloseable {
 
     protected final Map<String, String> params;
 
-    protected S3Client client;
+    protected final S3Client client;
+    protected final Region region;
     protected int maxCachedContentSize = 1024 * 1024;
 
     public AmazonS3Client(final Map<String, String> params) {
@@ -58,14 +59,19 @@ public class AmazonS3Client implements AutoCloseable {
         if (region.isEmpty()) {
             throw new DataStoreException("Parameter '" + REGION + "' is required");
         }
+        this.region = Region.of(region);
         final AwsCredentialsProvider awsCredentialsProvider = new AwsBasicCredentialsProvider(params);
         try {
             client = S3Client.builder() //
-                    .region(Region.of(region)).credentialsProvider(awsCredentialsProvider) //
+                    .region(this.region).credentialsProvider(awsCredentialsProvider) //
                     .build();
         } catch (final Exception e) {
             throw new DataStoreException("Failed to create a client.", e);
         }
+    }
+
+    public Region getRegion() {
+        return region;
     }
 
     public void getBuckets(final Consumer<Bucket> consumer) {
