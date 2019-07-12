@@ -6,7 +6,7 @@
 	<groupId>org.codelibs.fess</groupId>
 	<artifactId>fess-ds-s3</artifactId>
 	<packaging>jar</packaging>
-	<name>S3 Data Store</name>
+	<name>Amazon S3 Data Store</name>
 	<version>12.6.0-SNAPSHOT</version>
 	<url>https://fess.codelibs.org/</url>
 	<inceptionYear>2009</inceptionYear>

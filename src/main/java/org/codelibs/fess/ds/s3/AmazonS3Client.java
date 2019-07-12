@@ -23,12 +23,13 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import java.util.Map;
 
-public class S3Client implements AutoCloseable {
+public class AmazonS3Client implements AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(S3Client.class);
+    private static final Logger logger = LoggerFactory.getLogger(AmazonS3Client.class);
 
     // parameters for authentication
     protected static final String REGION = "region";
@@ -40,10 +41,10 @@ public class S3Client implements AutoCloseable {
 
     protected final Map<String, String> params;
 
-    protected software.amazon.awssdk.services.s3.S3Client client;
+    protected S3Client client;
     protected int maxCachedContentSize = 1024 * 1024;
 
-    public S3Client(final Map<String, String> params) {
+    public AmazonS3Client(final Map<String, String> params) {
         this.params = params;
         final String size = params.get(MAX_CACHED_CONTENT_SIZE);
         if (StringUtil.isNotBlank(size)) {
@@ -56,7 +57,7 @@ public class S3Client implements AutoCloseable {
         }
         final AwsCredentialsProvider awsCredentialsProvider = new AwsBasicCredentialsProvider(params);
         try {
-            client = software.amazon.awssdk.services.s3.S3Client.builder() //
+            client = S3Client.builder() //
                     .region(Region.of(region)).credentialsProvider(awsCredentialsProvider) //
                     .build();
         } catch (final Exception e) {

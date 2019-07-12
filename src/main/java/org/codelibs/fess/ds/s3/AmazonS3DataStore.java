@@ -31,11 +31,11 @@ import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class S3DataStore extends AbstractDataStore {
-    private static final Logger logger = LoggerFactory.getLogger(S3DataStore.class);
+public class AmazonS3DataStore extends AbstractDataStore {
+    private static final Logger logger = LoggerFactory.getLogger(AmazonS3DataStore.class);
 
     protected String getName() {
-        return "S3";
+        return "AmazonS3";
     }
 
     @Override

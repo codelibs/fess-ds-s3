@@ -18,8 +18,8 @@ package org.codelibs.fess.ds.s3;
 import org.codelibs.fess.util.ComponentUtil;
 import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
 
-public class S3DataStoreTest extends LastaFluteTestCase {
-    public S3DataStore dataStore;
+public class AmazonS3DataStoreTest extends LastaFluteTestCase {
+    public AmazonS3DataStore dataStore;
 
     @Override
     protected String prepareConfigFile() {
@@ -34,7 +34,7 @@ public class S3DataStoreTest extends LastaFluteTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        dataStore = new S3DataStore();
+        dataStore = new AmazonS3DataStore();
     }
 
     @Override

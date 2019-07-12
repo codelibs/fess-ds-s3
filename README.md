@@ -1,13 +1,13 @@
-S3 Data Store for Fess [![Build Status](https://travis-ci.org/codelibs/fess-ds-dropbox.svg?branch=master)](https://travis-ci.org/codelibs/fess-ds-dropbox)
+Amazon S3 Data Store for Fess [![Build Status](https://travis-ci.org/codelibs/fess-ds-s3.svg?branch=master)](https://travis-ci.org/codelibs/fess-ds-s3)
 ==========================
 
 ## Overview
 
-S3 Data Store is an extension for Fess Data Store Crawling.
+Amazon S3 Data Store is an extension for Fess Data Store Crawling.
 
 ## Download
 
-See [Maven Repository](http://central.maven.org/maven2/org/codelibs/fess/fess-ds-dropbox/).
+See [Maven Repository](http://central.maven.org/maven2/org/codelibs/fess/fess-ds-s3/).
 
 ## Installation
 
