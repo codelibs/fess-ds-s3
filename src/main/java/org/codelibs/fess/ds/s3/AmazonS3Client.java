@@ -24,8 +24,11 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Bucket;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class AmazonS3Client implements AutoCloseable {
 
@@ -33,8 +36,8 @@ public class AmazonS3Client implements AutoCloseable {
 
     // parameters for authentication
     protected static final String REGION = "region";
-    protected static final String ACCESSKEY_ID = "accesskey_id";
-    protected static final String SECRET_ACCESSKEY = "secret_accesskey";
+    protected static final String ACCESS_KEY_ID = "access_key_id";
+    protected static final String SECRET_KEY = "secret_key";
 
     // other parameters
     protected static final String MAX_CACHED_CONTENT_SIZE = "max_cached_content_size";
@@ -65,7 +68,13 @@ public class AmazonS3Client implements AutoCloseable {
         }
     }
 
-    // TODO implement getObject, getBucket ...
+    public void getBuckets(final Consumer<Bucket> consumer) {
+        client.listBuckets().buckets().forEach(consumer);
+    }
+
+    public void getObjects(final String bucket, final Consumer<S3Object> consumer) {
+        client.listObjectsV2(builder -> builder.bucket(bucket).build()).contents().forEach(consumer);
+    }
 
     @Override
     public void close() {
@@ -79,12 +88,12 @@ public class AmazonS3Client implements AutoCloseable {
         String secretAccessKey;
 
         AwsBasicCredentialsProvider(final Map<String, String> params) {
-            accessKeyId = params.getOrDefault(ACCESSKEY_ID, StringUtil.EMPTY);
-            secretAccessKey = params.getOrDefault(SECRET_ACCESSKEY, StringUtil.EMPTY);
+            accessKeyId = params.getOrDefault(ACCESS_KEY_ID, StringUtil.EMPTY);
+            secretAccessKey = params.getOrDefault(SECRET_KEY, StringUtil.EMPTY);
             if (accessKeyId.isEmpty() || secretAccessKey.isEmpty()) {
                 throw new DataStoreException("Parameter '" + //
-                        ACCESSKEY_ID + "', '" + //
-                        SECRET_ACCESSKEY + "' is required");
+                        ACCESS_KEY_ID + "', '" + //
+                        SECRET_KEY + "' is required");
             }
         }
 
