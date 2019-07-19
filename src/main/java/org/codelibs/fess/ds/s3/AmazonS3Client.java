@@ -22,9 +22,11 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Bucket;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.util.Map;
@@ -80,6 +82,10 @@ public class AmazonS3Client implements AutoCloseable {
 
     public void getObjects(final String bucket, final Consumer<S3Object> consumer) {
         client.listObjectsV2(builder -> builder.bucket(bucket).build()).contents().forEach(consumer);
+    }
+
+    public ResponseInputStream<GetObjectResponse> getObject(final String bucket, final String key) {
+        return client.getObject(builder -> builder.bucket(bucket).key(key).build());
     }
 
     @Override

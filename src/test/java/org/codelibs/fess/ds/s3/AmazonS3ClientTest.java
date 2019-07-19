@@ -18,7 +18,9 @@ package org.codelibs.fess.ds.s3;
 import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,6 +56,7 @@ public class AmazonS3ClientTest extends LastaFluteTestCase {
     public void test() {
         // getBuckets();
         // getObjects();
+        // getObject();
     }
 
     private void getBuckets() {
@@ -68,6 +71,16 @@ public class AmazonS3ClientTest extends LastaFluteTestCase {
         client.getBuckets(bucket -> {
             client.getObjects(bucket.name(), obj -> {
                 logger.debug(obj.key());
+            });
+        });
+    }
+
+    private void getObject() {
+        final AmazonS3Client client = createClient();
+        client.getBuckets(bucket -> {
+            client.getObjects(bucket.name(), obj -> {
+                final ResponseInputStream<GetObjectResponse> response = client.getObject(bucket.name(), obj.key());
+                logger.debug(response.response().toString());
             });
         });
     }
