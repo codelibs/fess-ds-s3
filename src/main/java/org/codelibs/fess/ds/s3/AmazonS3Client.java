@@ -81,10 +81,11 @@ public class AmazonS3Client implements AutoCloseable {
     }
 
     public void getObjects(final String bucket, final Consumer<S3Object> consumer) {
-        client.listObjectsV2(builder -> builder.bucket(bucket).build()).contents().forEach(consumer);
+        client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).build()).contents().forEach(consumer);
     }
 
     public ResponseInputStream<GetObjectResponse> getObject(final String bucket, final String key) {
+        // TODO request params
         return client.getObject(builder -> builder.bucket(bucket).key(key).build());
     }
 
