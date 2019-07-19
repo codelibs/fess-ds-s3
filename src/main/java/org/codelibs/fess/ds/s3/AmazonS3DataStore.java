@@ -15,18 +15,12 @@
  */
 package org.codelibs.fess.ds.s3;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.core.stream.StreamUtil;
 import org.codelibs.fess.Constants;
 import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
+import org.codelibs.fess.crawler.exception.MaxLengthExceededException;
 import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.ds.AbstractDataStore;
@@ -36,8 +30,18 @@ import org.codelibs.fess.util.ComponentUtil;
 import org.lastaflute.di.core.exception.ComponentNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.Bucket;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 public class AmazonS3DataStore extends AbstractDataStore {
 
@@ -57,7 +61,6 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected static final String OBJECT = "object";
     // - custom
     protected static final String OBJECT_URL = "url";
-    // TODO add scripts
     // - bucket(original)
     protected static final String OBJECT_BUCKET_NAME = "bucket_name";
     protected static final String OBJECT_BUCKET_CREATION_DATE = "creation_date";
@@ -65,6 +68,33 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected static final String OBJECT_KEY = "key";
     protected static final String OBJECT_E_TAG = "e_tag";
     protected static final String OBJECT_LAST_MODIFIED = "last_modified";
+    protected static final String OBJECT_ACCEPT_RANGES = "accept_ranges";
+    protected static final String OBJECT_CACHE_CONTROL = "cache_control";
+    protected static final String OBJECT_CONTENT_DISPOSITION = "content_disposition";
+    protected static final String OBJECT_CONTENT_ENCODING = "content_encoding";
+    protected static final String OBJECT_CONTENT_LANGUAGE = "content_language";
+    protected static final String OBJECT_CONTENT_LENGTH = "content_length";
+    protected static final String OBJECT_CONTENT_RANGE = "content_range";
+    protected static final String OBJECT_CONTENT_TYPE = "content_type";
+    protected static final String OBJECT_DELETE_MARKER = "delete_marker";
+    protected static final String OBJECT_EXPIRATION = "expiration";
+    protected static final String OBJECT_EXPIRES = "expires";
+    protected static final String OBJECT_MISSING_META = "missing_meta";
+    protected static final String OBJECT_OBJECT_LOCK_LEGAL_HOLD_STATUS = "object_lock_legal_hold_status";
+    protected static final String OBJECT_OBJECT_LOCK_MODE = "object_lock_mode";
+    protected static final String OBJECT_OBJECT_LOCK_RETAIN_UNTIL_DATE = "object_lock_retain_until_date";
+    protected static final String OBJECT_PARTS_COUNT = "parts_count";
+    protected static final String OBJECT_REPLICATION_STATUS = "replication_status";
+    protected static final String OBJECT_REQUEST_CHARGED = "request_charged";
+    protected static final String OBJECT_RESTORE = "restore";
+    protected static final String OBJECT_SERVER_SIDE_ENCRYPTION = "server_side_encryption";
+    protected static final String OBJECT_STORAGE_CLASS = "storage_class";
+    protected static final String OBJECT_SSE_CUSTOMER_ALGORITHM = "sse_customer_algorithm";
+    protected static final String OBJECT_SSE_CUSTOMER_KEY_MD5 = "sse_customer_key_md5";
+    protected static final String OBJECT_SSEKMS_KEY_ID = "ssekms_key_id";
+    protected static final String OBJECT_TAG_COUNT = "tag_count";
+    protected static final String OBJECT_VERSION_ID = "version_id";
+    protected static final String OBJECT_WEBSITE_REDIRECT_LOCATION = "website_redirect_location";
 
     protected String getName() {
         return "AmazonS3";
@@ -123,13 +153,28 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 return;
             }
 
+            final ResponseInputStream<GetObjectResponse> stream = client.getObject(bucket.name(), object.key());
+            final GetObjectResponse response = stream.response();
+
+            if (Stream.of(config.supportedMimeTypes).noneMatch(response.contentType()::matches)) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("{} is not an indexing target.", response.contentType());
+                }
+                return;
+            }
+
+            if (config.maxSize < response.contentLength()) {
+                throw new MaxLengthExceededException(
+                        "The content length (" + response.contentLength() + " byte) is over " + config.maxSize + " byte. The url is "
+                                + url);
+            }
+
             final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap);
             final Map<String, Object> objectMap = new HashMap<>();
 
             logger.info("Crawling URL: {}", url);
 
             objectMap.put(OBJECT_URL, url);
-            // TODO add scripts
 
             objectMap.put(OBJECT_BUCKET_NAME, bucket.name());
             objectMap.put(OBJECT_BUCKET_CREATION_DATE, Date.from(bucket.creationDate()));
@@ -137,6 +182,33 @@ public class AmazonS3DataStore extends AbstractDataStore {
             objectMap.put(OBJECT_KEY, object.key());
             objectMap.put(OBJECT_E_TAG, object.eTag());
             objectMap.put(OBJECT_LAST_MODIFIED, Date.from(object.lastModified()));
+            objectMap.put(OBJECT_ACCEPT_RANGES, response.acceptRanges());
+            objectMap.put(OBJECT_CACHE_CONTROL, response.cacheControl());
+            objectMap.put(OBJECT_CONTENT_DISPOSITION, response.contentDisposition());
+            objectMap.put(OBJECT_CONTENT_ENCODING, response.contentEncoding());
+            objectMap.put(OBJECT_CONTENT_LANGUAGE, response.contentLanguage());
+            objectMap.put(OBJECT_CONTENT_LENGTH, response.contentLength());
+            objectMap.put(OBJECT_CONTENT_RANGE, response.contentRange());
+            objectMap.put(OBJECT_CONTENT_TYPE, response.contentType());
+            objectMap.put(OBJECT_DELETE_MARKER, response.deleteMarker());
+            objectMap.put(OBJECT_EXPIRATION, response.expiration());
+            objectMap.put(OBJECT_EXPIRES, Date.from(response.expires()));
+            objectMap.put(OBJECT_MISSING_META, response.missingMeta());
+            objectMap.put(OBJECT_OBJECT_LOCK_LEGAL_HOLD_STATUS, response.objectLockLegalHoldStatusAsString());
+            objectMap.put(OBJECT_OBJECT_LOCK_MODE, response.objectLockModeAsString());
+            objectMap.put(OBJECT_OBJECT_LOCK_RETAIN_UNTIL_DATE, Date.from(response.objectLockRetainUntilDate()));
+            objectMap.put(OBJECT_PARTS_COUNT, response.partsCount());
+            objectMap.put(OBJECT_REPLICATION_STATUS, response.replicationStatusAsString());
+            objectMap.put(OBJECT_REQUEST_CHARGED, response.requestChargedAsString());
+            objectMap.put(OBJECT_RESTORE, response.restore());
+            objectMap.put(OBJECT_SERVER_SIDE_ENCRYPTION, response.serverSideEncryptionAsString());
+            objectMap.put(OBJECT_STORAGE_CLASS, response.storageClassAsString());
+            objectMap.put(OBJECT_SSE_CUSTOMER_ALGORITHM, response.sseCustomerAlgorithm());
+            objectMap.put(OBJECT_SSE_CUSTOMER_KEY_MD5, response.sseCustomerKeyMD5());
+            objectMap.put(OBJECT_SSEKMS_KEY_ID, response.ssekmsKeyId());
+            objectMap.put(OBJECT_TAG_COUNT, response.tagCount());
+            objectMap.put(OBJECT_VERSION_ID, response.versionId());
+            objectMap.put(OBJECT_WEBSITE_REDIRECT_LOCATION, response.websiteRedirectLocation());
 
             resultMap.put(OBJECT, objectMap);
 
