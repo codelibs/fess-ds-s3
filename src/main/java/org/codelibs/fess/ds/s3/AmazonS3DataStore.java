@@ -22,10 +22,12 @@ import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.crawler.exception.MaxLengthExceededException;
 import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
+import org.codelibs.fess.crawler.extractor.Extractor;
 import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
+import org.codelibs.fess.exception.DataStoreCrawlingException;
 import org.codelibs.fess.util.ComponentUtil;
 import org.lastaflute.di.core.exception.ComponentNotFoundException;
 import org.slf4j.Logger;
@@ -61,6 +63,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected static final String OBJECT = "object";
     // - custom
     protected static final String OBJECT_URL = "url";
+    protected static final String OBJECT_CONTENTS = "contents";
     // - bucket(original)
     protected static final String OBJECT_BUCKET_NAME = "bucket_name";
     protected static final String OBJECT_BUCKET_CREATION_DATE = "creation_date";
@@ -95,6 +98,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected static final String OBJECT_TAG_COUNT = "tag_count";
     protected static final String OBJECT_VERSION_ID = "version_id";
     protected static final String OBJECT_WEBSITE_REDIRECT_LOCATION = "website_redirect_location";
+
+    protected String extractorName = "tikaExtractor";
 
     protected String getName() {
         return "AmazonS3";
@@ -175,6 +180,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
             logger.info("Crawling URL: {}", url);
 
             objectMap.put(OBJECT_URL, url);
+            objectMap.put(OBJECT_CONTENTS, getObjectContents(stream, response.contentType(), object.key(), url, config.ignoreError));
 
             objectMap.put(OBJECT_BUCKET_NAME, bucket.name());
             objectMap.put(OBJECT_BUCKET_CREATION_DATE, Date.from(bucket.creationDate()));
@@ -252,6 +258,27 @@ public class AmazonS3DataStore extends AbstractDataStore {
             logger.warn("Crawling Access Exception at : " + dataMap, t);
             final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
             failureUrlService.store(dataConfig, t.getClass().getCanonicalName(), "", t);
+        }
+    }
+
+    protected String getObjectContents(final ResponseInputStream<GetObjectResponse> in, final String contentType, final String key,
+            final String url, final boolean ignoreError) {
+        try {
+            Extractor extractor = ComponentUtil.getExtractorFactory().getExtractor(contentType);
+            if (extractor == null) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("use a default extractor as {} by {}", extractorName, contentType);
+                }
+                extractor = ComponentUtil.getComponent(extractorName);
+            }
+            return extractor.getText(in, null).getContent();
+        } catch (final Exception e) {
+            if (ignoreError) {
+                logger.warn("Failed to get contents: " + key, e);
+                return StringUtil.EMPTY;
+            } else {
+                throw new DataStoreCrawlingException(url, "Failed to get contents: " + key, e);
+            }
         }
     }
 
