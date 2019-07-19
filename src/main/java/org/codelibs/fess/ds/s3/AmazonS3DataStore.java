@@ -15,6 +15,7 @@
  */
 package org.codelibs.fess.ds.s3;
 
+import org.apache.tika.io.FilenameUtils;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.core.stream.StreamUtil;
 import org.codelibs.fess.Constants;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.Owner;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.net.URI;
@@ -64,7 +66,10 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected static final String OBJECT = "object";
     // - custom
     protected static final String OBJECT_URL = "url";
+    protected static final String OBJECT_MIMETYPE = "mimetype";
+    protected static final String OBJECT_FILETYPE = "filetype";
     protected static final String OBJECT_CONTENTS = "contents";
+    protected static final String OBJECT_FILENAME = "filename";
     // - bucket(original)
     protected static final String OBJECT_BUCKET_NAME = "bucket_name";
     protected static final String OBJECT_BUCKET_CREATION_DATE = "creation_date";
@@ -72,6 +77,11 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected static final String OBJECT_KEY = "key";
     protected static final String OBJECT_E_TAG = "e_tag";
     protected static final String OBJECT_LAST_MODIFIED = "last_modified";
+    protected static final String OBJECT_OWNER_ID = "owner_id";
+    protected static final String OBJECT_OWNER_DISPLAY_NAME = "owner_display_name";
+    protected static final String OBJECT_SIZE = "size";
+    protected static final String OBJECT_STORAGE_CLASS = "storage_class";
+
     protected static final String OBJECT_ACCEPT_RANGES = "accept_ranges";
     protected static final String OBJECT_CACHE_CONTROL = "cache_control";
     protected static final String OBJECT_CONTENT_DISPOSITION = "content_disposition";
@@ -92,7 +102,6 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected static final String OBJECT_REQUEST_CHARGED = "request_charged";
     protected static final String OBJECT_RESTORE = "restore";
     protected static final String OBJECT_SERVER_SIDE_ENCRYPTION = "server_side_encryption";
-    protected static final String OBJECT_STORAGE_CLASS = "storage_class";
     protected static final String OBJECT_SSE_CUSTOMER_ALGORITHM = "sse_customer_algorithm";
     protected static final String OBJECT_SSE_CUSTOMER_KEY_MD5 = "sse_customer_key_md5";
     protected static final String OBJECT_SSEKMS_KEY_ID = "ssekms_key_id";
@@ -169,10 +178,9 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 return;
             }
 
-            if (config.maxSize < response.contentLength()) {
+            if (config.maxSize < object.size()) {
                 throw new MaxLengthExceededException(
-                        "The content length (" + response.contentLength() + " byte) is over " + config.maxSize + " byte. The url is "
-                                + url);
+                        "The content length (" + object.size() + " byte) is over " + config.maxSize + " byte. The url is " + url);
             }
 
             final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap);
@@ -181,7 +189,10 @@ public class AmazonS3DataStore extends AbstractDataStore {
             logger.info("Crawling URL: {}", url);
 
             objectMap.put(OBJECT_URL, url);
+            objectMap.put(OBJECT_MIMETYPE, response.contentType());
+            objectMap.put(OBJECT_FILETYPE, ComponentUtil.getFileTypeHelper().get(response.contentType()));
             objectMap.put(OBJECT_CONTENTS, getObjectContents(stream, response.contentType(), object.key(), url, config.ignoreError));
+            objectMap.put(OBJECT_FILENAME, FilenameUtils.getName(object.key()));
 
             objectMap.put(OBJECT_BUCKET_NAME, bucket.name());
             objectMap.put(OBJECT_BUCKET_CREATION_DATE, toDate(bucket.creationDate()));
@@ -189,6 +200,11 @@ public class AmazonS3DataStore extends AbstractDataStore {
             objectMap.put(OBJECT_KEY, object.key());
             objectMap.put(OBJECT_E_TAG, object.eTag());
             objectMap.put(OBJECT_LAST_MODIFIED, toDate(object.lastModified()));
+            final Owner owner = object.owner();
+            objectMap.put(OBJECT_OWNER_ID, Objects.nonNull(owner) ? owner.id() : null);
+            objectMap.put(OBJECT_OWNER_DISPLAY_NAME, Objects.nonNull(owner) ? owner.displayName() : null);
+            objectMap.put(OBJECT_SIZE, object.size());
+            objectMap.put(OBJECT_STORAGE_CLASS, object.storageClassAsString());
             objectMap.put(OBJECT_ACCEPT_RANGES, response.acceptRanges());
             objectMap.put(OBJECT_CACHE_CONTROL, response.cacheControl());
             objectMap.put(OBJECT_CONTENT_DISPOSITION, response.contentDisposition());
@@ -209,7 +225,6 @@ public class AmazonS3DataStore extends AbstractDataStore {
             objectMap.put(OBJECT_REQUEST_CHARGED, response.requestChargedAsString());
             objectMap.put(OBJECT_RESTORE, response.restore());
             objectMap.put(OBJECT_SERVER_SIDE_ENCRYPTION, response.serverSideEncryptionAsString());
-            objectMap.put(OBJECT_STORAGE_CLASS, response.storageClassAsString());
             objectMap.put(OBJECT_SSE_CUSTOMER_ALGORITHM, response.sseCustomerAlgorithm());
             objectMap.put(OBJECT_SSE_CUSTOMER_KEY_MD5, response.sseCustomerKeyMD5());
             objectMap.put(OBJECT_SSEKMS_KEY_ID, response.ssekmsKeyId());
@@ -220,7 +235,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
             resultMap.put(OBJECT, objectMap);
 
             if (logger.isDebugEnabled()) {
-                logger.debug("fileMap: {}", objectMap);
+                logger.debug("objectMap: {}", objectMap);
             }
 
             for (final Map.Entry<String, String> entry : scriptMap.entrySet()) {
