@@ -39,6 +39,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -183,11 +184,11 @@ public class AmazonS3DataStore extends AbstractDataStore {
             objectMap.put(OBJECT_CONTENTS, getObjectContents(stream, response.contentType(), object.key(), url, config.ignoreError));
 
             objectMap.put(OBJECT_BUCKET_NAME, bucket.name());
-            objectMap.put(OBJECT_BUCKET_CREATION_DATE, Date.from(bucket.creationDate()));
+            objectMap.put(OBJECT_BUCKET_CREATION_DATE, toDate(bucket.creationDate()));
 
             objectMap.put(OBJECT_KEY, object.key());
             objectMap.put(OBJECT_E_TAG, object.eTag());
-            objectMap.put(OBJECT_LAST_MODIFIED, Date.from(object.lastModified()));
+            objectMap.put(OBJECT_LAST_MODIFIED, toDate(object.lastModified()));
             objectMap.put(OBJECT_ACCEPT_RANGES, response.acceptRanges());
             objectMap.put(OBJECT_CACHE_CONTROL, response.cacheControl());
             objectMap.put(OBJECT_CONTENT_DISPOSITION, response.contentDisposition());
@@ -198,11 +199,11 @@ public class AmazonS3DataStore extends AbstractDataStore {
             objectMap.put(OBJECT_CONTENT_TYPE, response.contentType());
             objectMap.put(OBJECT_DELETE_MARKER, response.deleteMarker());
             objectMap.put(OBJECT_EXPIRATION, response.expiration());
-            objectMap.put(OBJECT_EXPIRES, Date.from(response.expires()));
+            objectMap.put(OBJECT_EXPIRES, toDate(response.expires()));
             objectMap.put(OBJECT_MISSING_META, response.missingMeta());
             objectMap.put(OBJECT_OBJECT_LOCK_LEGAL_HOLD_STATUS, response.objectLockLegalHoldStatusAsString());
             objectMap.put(OBJECT_OBJECT_LOCK_MODE, response.objectLockModeAsString());
-            objectMap.put(OBJECT_OBJECT_LOCK_RETAIN_UNTIL_DATE, Date.from(response.objectLockRetainUntilDate()));
+            objectMap.put(OBJECT_OBJECT_LOCK_RETAIN_UNTIL_DATE, toDate(response.objectLockRetainUntilDate()));
             objectMap.put(OBJECT_PARTS_COUNT, response.partsCount());
             objectMap.put(OBJECT_REPLICATION_STATUS, response.replicationStatusAsString());
             objectMap.put(OBJECT_REQUEST_CHARGED, response.requestChargedAsString());
@@ -284,6 +285,10 @@ public class AmazonS3DataStore extends AbstractDataStore {
 
     protected String getUrl(final String region, final String bucket, final String object) throws URISyntaxException {
         return new URI("https", bucket + ".s3-" + region + ".amazonaws.com", "/" + object, null).toASCIIString();
+    }
+
+    protected Date toDate(final Instant instant) {
+        return Objects.nonNull(instant) ? Date.from(instant) : null;
     }
 
     protected AmazonS3Client createClient(final Map<String, String> paramMap) {
