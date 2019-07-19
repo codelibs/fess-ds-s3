@@ -25,11 +25,14 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
+import java.net.URI;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public class AmazonS3Client implements AutoCloseable {
@@ -40,6 +43,7 @@ public class AmazonS3Client implements AutoCloseable {
     protected static final String REGION = "region";
     protected static final String ACCESS_KEY_ID = "access_key_id";
     protected static final String SECRET_KEY = "secret_key";
+    protected static final String ENDPOINT = "endpoint";
 
     // other parameters
     protected static final String MAX_CACHED_CONTENT_SIZE = "max_cached_content_size";
@@ -48,6 +52,7 @@ public class AmazonS3Client implements AutoCloseable {
 
     protected final S3Client client;
     protected final Region region;
+    protected final String endpoint;
     protected int maxCachedContentSize = 1024 * 1024;
 
     public AmazonS3Client(final Map<String, String> params) {
@@ -62,11 +67,16 @@ public class AmazonS3Client implements AutoCloseable {
             throw new DataStoreException("Parameter '" + REGION + "' is required");
         }
         this.region = Region.of(region);
+        this.endpoint = params.get(ENDPOINT);
         final AwsCredentialsProvider awsCredentialsProvider = new AwsBasicCredentialsProvider(params);
         try {
-            client = S3Client.builder() //
-                    .region(this.region).credentialsProvider(awsCredentialsProvider) //
-                    .build();
+            final S3ClientBuilder builder = S3Client.builder() //
+                    .region(this.region) //
+                    .credentialsProvider(awsCredentialsProvider);
+            if (Objects.nonNull(this.endpoint)) {
+                builder.endpointOverride(URI.create(this.endpoint));
+            }
+            client = builder.build();
         } catch (final Exception e) {
             throw new DataStoreException("Failed to create a client.", e);
         }
@@ -74,6 +84,10 @@ public class AmazonS3Client implements AutoCloseable {
 
     public Region getRegion() {
         return region;
+    }
+
+    public String getEndpoint() {
+        return endpoint;
     }
 
     public void getBuckets(final Consumer<Bucket> consumer) {

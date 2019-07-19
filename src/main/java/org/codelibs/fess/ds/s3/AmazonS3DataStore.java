@@ -159,7 +159,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
             final Bucket bucket, final S3Object object) {
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
         try {
-            final String url = getUrl(client.getRegion().id(), bucket.name(), object.key());
+            final String url = getUrl(client.getEndpoint(), client.getRegion().id(), bucket.name(), object.key());
 
             final UrlFilter urlFilter = config.urlFilter;
             if (urlFilter != null && !urlFilter.match(url)) {
@@ -300,7 +300,13 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
-    protected String getUrl(final String region, final String bucket, final String object) throws URISyntaxException {
+    protected String getUrl(final String endpoint, final String region, final String bucket, final String object)
+            throws URISyntaxException {
+        if (Objects.nonNull(endpoint)) {
+            final URI uri = URI.create(endpoint);
+            System.out.println(bucket + "." + uri.getAuthority());
+            return new URI(uri.getScheme(), bucket + "." + uri.getAuthority(), "/" + object, null, null).toASCIIString();
+        }
         return new URI("https", bucket + ".s3-" + region + ".amazonaws.com", "/" + object, null).toASCIIString();
     }
 
