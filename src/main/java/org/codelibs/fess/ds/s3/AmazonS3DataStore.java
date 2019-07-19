@@ -70,6 +70,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected static final String OBJECT_FILETYPE = "filetype";
     protected static final String OBJECT_CONTENTS = "contents";
     protected static final String OBJECT_FILENAME = "filename";
+    protected static final String OBJECT_MANAGEMENT_URL = "management_url";
     // - bucket(original)
     protected static final String OBJECT_BUCKET_NAME = "bucket_name";
     protected static final String OBJECT_BUCKET_CREATION_DATE = "creation_date";
@@ -193,6 +194,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
             objectMap.put(OBJECT_FILETYPE, ComponentUtil.getFileTypeHelper().get(response.contentType()));
             objectMap.put(OBJECT_CONTENTS, getObjectContents(stream, response.contentType(), object.key(), url, config.ignoreError));
             objectMap.put(OBJECT_FILENAME, FilenameUtils.getName(object.key()));
+            objectMap.put(OBJECT_MANAGEMENT_URL, getManagementUrl(client.getRegion().id(), bucket.name(), object.key()));
 
             objectMap.put(OBJECT_BUCKET_NAME, bucket.name());
             objectMap.put(OBJECT_BUCKET_CREATION_DATE, toDate(bucket.creationDate()));
@@ -300,6 +302,11 @@ public class AmazonS3DataStore extends AbstractDataStore {
 
     protected String getUrl(final String region, final String bucket, final String object) throws URISyntaxException {
         return new URI("https", bucket + ".s3-" + region + ".amazonaws.com", "/" + object, null).toASCIIString();
+    }
+
+    protected String getManagementUrl(final String region, final String bucket, final String object) throws URISyntaxException {
+        return new URI("https", "s3.console.aws.amazon.com", "/s3/object/" + bucket + "/" + object, "region=" + region, null)
+                .toASCIIString();
     }
 
     protected Date toDate(final Instant instant) {
