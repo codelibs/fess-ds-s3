@@ -15,82 +15,60 @@
  */
 package org.codelibs.fess.ds.s3;
 
-import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import cloud.localstack.LocalstackTestRunner;
+import cloud.localstack.TestUtils;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.Bucket;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AmazonS3ClientTest extends LastaFluteTestCase {
+import static org.junit.Assert.assertEquals;
 
-    private static final Logger logger = LoggerFactory.getLogger(AmazonS3ClientTest.class);
+@RunWith(LocalstackTestRunner.class)
+public class AmazonS3ClientTest {
 
-    private static final String ACCESS_KEY_ID = "";
-    private static final String SECRET_KEY = "";
-    private static final String REGION = Region.AP_NORTHEAST_1.id();
+    private static AmazonS3Client client;
 
-    @Override
-    protected String prepareConfigFile() {
-        return "test_app.xml";
-    }
+    @BeforeClass
+    public static void setUp() throws Exception {
+        final AmazonS3 s3 = TestUtils.getClientS3();
+        final Bucket bucket = s3.createBucket("fess");
 
-    @Override
-    protected boolean isSuppressTestCaseTransaction() {
-        return true;
-    }
+        final File file = new File("test.txt");
+        FileUtils.writeStringToFile(file, "Test Contents", StandardCharsets.UTF_8);
+        s3.putObject(bucket.getName(), file.getName(), file);
+        file.delete();
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
-    }
-
-    public void test() {
-        // getBuckets();
-        // getObjects();
-        // getObject();
-    }
-
-    private void getBuckets() {
-        final AmazonS3Client client = createClient();
-        client.getBuckets(bucket -> {
-            logger.debug(bucket.name());
-        });
-    }
-
-    private void getObjects() {
-        final AmazonS3Client client = createClient();
-        client.getBuckets(bucket -> {
-            client.getObjects(bucket.name(), obj -> {
-                logger.debug(obj.key());
-            });
-        });
-    }
-
-    private void getObject() {
-        final AmazonS3Client client = createClient();
-        client.getBuckets(bucket -> {
-            client.getObjects(bucket.name(), obj -> {
-                final ResponseInputStream<GetObjectResponse> response = client.getObject(bucket.name(), obj.key());
-                logger.debug(response.response().toString());
-            });
-        });
-    }
-
-    private AmazonS3Client createClient() {
         final Map<String, String> params = new HashMap<>();
-        params.put(AmazonS3Client.ACCESS_KEY_ID, ACCESS_KEY_ID);
-        params.put(AmazonS3Client.SECRET_KEY, SECRET_KEY);
-        params.put(AmazonS3Client.REGION, REGION);
-        return new AmazonS3Client(params);
+        params.put(AmazonS3Client.ACCESS_KEY_ID, TestUtils.TEST_ACCESS_KEY);
+        params.put(AmazonS3Client.SECRET_KEY, TestUtils.TEST_SECRET_KEY);
+        params.put(AmazonS3Client.REGION, TestUtils.DEFAULT_REGION);
+        params.put(AmazonS3Client.ENDPOINT, "http://localhost:4572");
+        client = new AmazonS3Client(params);
+    }
+
+    @Test
+    public void test_getBuckets() {
+        client.getBuckets(bucket -> assertEquals("fess", bucket.name()));
+    }
+
+    @Test
+    public void test_getObjects() {
+        client.getObjects("fess", object -> assertEquals("test.txt", object.key()));
+    }
+
+    @Test
+    public void test_getObject() throws IOException {
+        assertEquals("Test Contents", IOUtils.toString(client.getObject("fess", "test.txt"), StandardCharsets.UTF_8));
     }
 
 }
