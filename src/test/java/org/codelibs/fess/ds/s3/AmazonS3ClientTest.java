@@ -31,8 +31,6 @@ public class AmazonS3ClientTest extends LastaFluteTestCase {
     private static final String SECRET_KEY = "";
     private static final String REGION = Region.AP_NORTHEAST_1.id();
 
-    private AmazonS3Client client;
-
     @Override
     protected String prepareConfigFile() {
         return "test_app.xml";
@@ -46,11 +44,6 @@ public class AmazonS3ClientTest extends LastaFluteTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        final Map<String, String> params = new HashMap<>();
-        params.put(AmazonS3Client.ACCESS_KEY_ID, ACCESS_KEY_ID);
-        params.put(AmazonS3Client.SECRET_KEY, SECRET_KEY);
-        params.put(AmazonS3Client.REGION, REGION);
-        client = new AmazonS3Client(params);
     }
 
     @Override
@@ -64,17 +57,27 @@ public class AmazonS3ClientTest extends LastaFluteTestCase {
     }
 
     private void getBuckets() {
+        final AmazonS3Client client = createClient();
         client.getBuckets(bucket -> {
             logger.debug(bucket.name());
         });
     }
 
     private void getObjects() {
+        final AmazonS3Client client = createClient();
         client.getBuckets(bucket -> {
             client.getObjects(bucket.name(), obj -> {
                 logger.debug(obj.key());
             });
         });
+    }
+
+    private AmazonS3Client createClient() {
+        final Map<String, String> params = new HashMap<>();
+        params.put(AmazonS3Client.ACCESS_KEY_ID, ACCESS_KEY_ID);
+        params.put(AmazonS3Client.SECRET_KEY, SECRET_KEY);
+        params.put(AmazonS3Client.REGION, REGION);
+        return new AmazonS3Client(params);
     }
 
 }
