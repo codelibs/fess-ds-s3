@@ -17,42 +17,45 @@ package org.codelibs.fess.ds.s3;
 
 import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.TestUtils;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.Bucket;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import static cloud.localstack.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(LocalstackTestRunner.class)
 public class AmazonS3ClientTest {
 
+    private static final String ENDPOINT = "http://localhost:4572";
     private static AmazonS3Client client;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        final AmazonS3 s3 = TestUtils.getClientS3();
+        TestUtils.getClientS3();
+        final AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard().
+                withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(ENDPOINT, DEFAULT_REGION)).
+                withCredentials(getCredentialsProvider());
+        builder.setPathStyleAccessEnabled(true);
+        final AmazonS3 s3 = builder.build();
         final Bucket bucket = s3.createBucket("fess");
-
-        final File file = new File("test.txt");
-        FileUtils.writeStringToFile(file, "Test Contents", StandardCharsets.UTF_8);
-        s3.putObject(bucket.getName(), file.getName(), file);
-        file.delete();
+        s3.putObject(bucket.getName(), "test.txt", "Test Contents");
 
         final Map<String, String> params = new HashMap<>();
-        params.put(AmazonS3Client.ACCESS_KEY_ID, TestUtils.TEST_ACCESS_KEY);
-        params.put(AmazonS3Client.SECRET_KEY, TestUtils.TEST_SECRET_KEY);
-        params.put(AmazonS3Client.REGION, TestUtils.DEFAULT_REGION);
-        params.put(AmazonS3Client.ENDPOINT, "http://localhost:4572");
+        params.put(AmazonS3Client.ACCESS_KEY_ID, TEST_ACCESS_KEY);
+        params.put(AmazonS3Client.SECRET_KEY, TEST_SECRET_KEY);
+        params.put(AmazonS3Client.REGION, DEFAULT_REGION);
+        params.put(AmazonS3Client.ENDPOINT, ENDPOINT);
         client = new AmazonS3Client(params);
     }
 
