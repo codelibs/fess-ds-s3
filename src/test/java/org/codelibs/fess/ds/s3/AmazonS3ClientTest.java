@@ -15,8 +15,8 @@
  */
 package org.codelibs.fess.ds.s3;
 
-import cloud.localstack.LocalstackTestRunner;
-import cloud.localstack.TestUtils;
+import cloud.localstack.docker.LocalstackDockerTestRunner;
+import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
@@ -34,7 +34,8 @@ import java.util.Map;
 import static cloud.localstack.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(LocalstackTestRunner.class)
+@RunWith(LocalstackDockerTestRunner.class)
+@LocalstackDockerProperties(services = { "s3" })
 public class AmazonS3ClientTest {
 
     private static final String ENDPOINT = "http://localhost:4572";
