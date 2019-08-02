@@ -42,7 +42,6 @@ public class AmazonS3ClientTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        TestUtils.getClientS3();
         final AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard().
                 withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(ENDPOINT, DEFAULT_REGION)).
                 withCredentials(getCredentialsProvider());
