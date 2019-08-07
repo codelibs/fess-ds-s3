@@ -4,13 +4,34 @@ import cloud.localstack.Localstack;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectListing;
+import org.codelibs.core.io.ResourceUtil;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static cloud.localstack.TestUtils.*;
+import static org.junit.Assert.fail;
 
 class TestUtils {
+
+    static final String BUCKET_NAME = "fess";
+    static final String[] FILES = { "sample-0.txt", "sample-1.txt" };
+
+    static void initializeBuckets() {
+        resetBuckets();
+        final AmazonS3 s3 = getClientS3();
+        final Bucket bucket = s3.createBucket(BUCKET_NAME);
+        Stream.of(FILES).forEach(path -> {
+            try {
+                final File file = new File(ResourceUtil.getResource(path).toURI());
+                s3.putObject(bucket.getName(), file.getName(), file);
+            } catch (final Exception e) {
+                fail(e.getMessage());
+            }
+        });
+    }
 
     static void resetBuckets() {
         final AmazonS3 s3 = getClientS3();

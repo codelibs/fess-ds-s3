@@ -18,8 +18,12 @@ package org.codelibs.fess.ds.s3;
 import org.codelibs.fess.util.ComponentUtil;
 import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
 
+import static org.codelibs.fess.ds.s3.TestUtils.initializeBuckets;
+import static org.codelibs.fess.ds.s3.TestUtils.resetBuckets;
+
 public class AmazonS3DataStoreTest extends LastaFluteTestCase {
-    public AmazonS3DataStore dataStore;
+
+    private AmazonS3DataStore dataStore;
 
     @Override
     protected String prepareConfigFile() {
@@ -35,10 +39,12 @@ public class AmazonS3DataStoreTest extends LastaFluteTestCase {
     public void setUp() throws Exception {
         super.setUp();
         dataStore = new AmazonS3DataStore();
+        initializeBuckets();
     }
 
     @Override
     public void tearDown() throws Exception {
+        resetBuckets();
         ComponentUtil.setFessConfig(null);
         super.tearDown();
     }
