@@ -75,6 +75,12 @@ public class AmazonS3ClientTest {
     }
 
     @Test
+    public void test_getObjectsMaxKeys() {
+        final Iterator<String> itr = Stream.of(FILES).iterator();
+        client.getObjects(BUCKET_NAME, 1, object -> assertEquals(itr.next(), object.key()));
+    }
+
+    @Test
     public void test_getObject() throws IOException {
         assertEquals("hogehoge", IOUtils.toString(client.getObject(BUCKET_NAME, FILES[0]), StandardCharsets.UTF_8));
         assertEquals("hugahuga", IOUtils.toString(client.getObject(BUCKET_NAME, FILES[1]), StandardCharsets.UTF_8));

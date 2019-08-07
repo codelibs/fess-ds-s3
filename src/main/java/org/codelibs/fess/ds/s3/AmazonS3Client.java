@@ -28,6 +28,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.net.URI;
@@ -95,11 +96,24 @@ public class AmazonS3Client implements AutoCloseable {
     }
 
     public void getObjects(final String bucket, final Consumer<S3Object> consumer) {
-        client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).build()).contents().forEach(consumer);
+        getObjects(bucket, 1000, consumer);
+    }
+
+    public void getObjects(final String bucket, final int maxKeys, final Consumer<S3Object> consumer) {
+        ListObjectsV2Response response = client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).build());
+        while (true) {
+            response.contents().forEach(consumer);
+            if (response.isTruncated()) {
+                final String next = response.nextContinuationToken();
+                response =
+                        client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).startAfter(next).build());
+            } else {
+                break;
+            }
+        }
     }
 
     public ResponseInputStream<GetObjectResponse> getObject(final String bucket, final String key) {
-        // TODO request params
         return client.getObject(builder -> builder.bucket(bucket).key(key).build());
     }
 
