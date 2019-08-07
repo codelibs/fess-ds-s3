@@ -7,7 +7,7 @@
 	<artifactId>fess-ds-s3</artifactId>
 	<packaging>jar</packaging>
 	<name>Amazon S3 Data Store</name>
-	<version>12.7.0-SNAPSHOT</version>
+	<version>13.0.0-SNAPSHOT</version>
 	<url>https://fess.codelibs.org/</url>
 	<inceptionYear>2009</inceptionYear>
 	<licenses>
@@ -36,14 +36,13 @@
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
 
-		<fess.version>12.7.0</fess.version>
+		<fess.version>13.0.0</fess.version>
 
 		<!-- Main Framework -->
 		<dbflute.version>1.2.0</dbflute.version>
 		<lastaflute.version>1.1.2</lastaflute.version>
+		<lasta.di.version>0.8.0-RC1</lasta.di.version>
 		<lasta.taglib.version>0.7.3</lasta.taglib.version>
 		<lasta.job.version>0.5.3</lasta.job.version>
 		<mailflute.version>0.6.0</mailflute.version>
@@ -53,7 +52,8 @@
 		<log4j.version>2.11.1</log4j.version>
 		<jackson.version>2.9.9</jackson.version>
 		<commons.fileupload.version>1.4</commons.fileupload.version>
-		<asm.version>5.1</asm.version>
+		<asm.version>7.1</asm.version>
+		<tika.version>1.20</tika.version>
 		<aws.version>2.5.59</aws.version>
 
 		<!-- Testing -->
@@ -64,11 +64,11 @@
 		<utflute.version>0.9.1</utflute.version>
 
 		<!-- Crawler -->
-		<crawler.version>2.7.0</crawler.version>
+		<crawler.version>3.0.0</crawler.version>
 
 		<!-- Elasticsearch -->
-		<elasticsearch.version>6.8.0</elasticsearch.version>
-		<elasticsearch.min.version>6.8.0</elasticsearch.min.version>
+		<elasticsearch.version>7.0.0</elasticsearch.version>
+		<elasticsearch.min.version>7.0.0</elasticsearch.min.version>
 		<cluster.runner.version>${elasticsearch.version}.0</cluster.runner.version>
 
 		<!-- Tomcat -->
@@ -82,8 +82,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.0</version>
 				<configuration>
-					<source>${maven.compiler.source}</source>
-					<target>${maven.compiler.target}</target>
+					<release>11</release>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
@@ -107,7 +106,6 @@
 					<encoding>UTF-8</encoding>
 					<docencoding>UTF-8</docencoding>
 					<charset>UTF-8</charset>
-					<source>8</source>
 				</configuration>
 			</plugin>
 			<plugin>
