@@ -15,11 +15,22 @@
  */
 package org.codelibs.fess.ds.s3;
 
+import org.codelibs.fess.crawler.container.StandardCrawlerContainer;
+import org.codelibs.fess.crawler.extractor.ExtractorFactory;
+import org.codelibs.fess.crawler.extractor.impl.TextExtractor;
+import org.codelibs.fess.helper.FileTypeHelper;
 import org.codelibs.fess.util.ComponentUtil;
 import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
-import static org.codelibs.fess.ds.s3.TestUtils.initializeBuckets;
-import static org.codelibs.fess.ds.s3.TestUtils.resetBuckets;
+import java.net.URISyntaxException;
+import java.util.Map;
+import java.util.Objects;
+
+import static cloud.localstack.Localstack.getEndpointS3;
+import static cloud.localstack.TestUtils.DEFAULT_REGION;
+import static org.codelibs.fess.ds.s3.TestUtils.*;
 
 public class AmazonS3DataStoreTest extends LastaFluteTestCase {
 
@@ -38,6 +49,15 @@ public class AmazonS3DataStoreTest extends LastaFluteTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+        final StandardCrawlerContainer crawlerContainer = new StandardCrawlerContainer() //
+                .singleton("fileTypeHelper", FileTypeHelper.class) //
+                .singleton("textExtractor", TextExtractor.class) //
+                .singleton("extractorFactory", ExtractorFactory.class);
+        final ExtractorFactory extractorFactory = crawlerContainer.getComponent("extractorFactory");
+        extractorFactory.addExtractor("text/plain", crawlerContainer.getComponent("textExtractor"));
+        ComponentUtil.register(crawlerContainer.getComponent("fileTypeHelper"), "fileTypeHelper");
+        ComponentUtil.register(crawlerContainer.getComponent("textExtractor"), "textExtractor");
+        ComponentUtil.register(extractorFactory, "extractorFactory");
         dataStore = new AmazonS3DataStore();
         initializeBuckets();
     }
@@ -47,6 +67,28 @@ public class AmazonS3DataStoreTest extends LastaFluteTestCase {
         resetBuckets();
         ComponentUtil.setFessConfig(null);
         super.tearDown();
+    }
+
+    public void test_getObjectMap() {
+        final AmazonS3Client client = getClient();
+        client.getBuckets(bucket -> {
+            if (Objects.equals(bucket.name(), BUCKET_NAME)) {
+                client.getObjects(bucket.name(), object -> {
+                    try {
+                        final String url = dataStore.getUrl(getEndpointS3(), DEFAULT_REGION, bucket.name(), object.key());
+                        final ResponseInputStream<GetObjectResponse> stream = client.getObject(bucket.name(), object.key());
+                        final Map<String, Object> map = dataStore.getObjectMap(DEFAULT_REGION, bucket, object, url, stream, false);
+                        if (Objects.equals(object.key(), FILES[0])) {
+                            assertEquals("hogehoge", map.get("contents"));
+                        } else if (Objects.equals(object.key(), FILES[1])) {
+                            assertEquals("hugahuga", map.get("contents"));
+                        }
+                    } catch (final URISyntaxException e) {
+                        fail(e.getMessage());
+                    }
+                });
+            }
+        });
     }
 
     public void test_getUrl() throws Exception {
