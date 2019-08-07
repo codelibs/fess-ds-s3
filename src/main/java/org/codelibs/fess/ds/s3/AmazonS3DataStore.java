@@ -43,7 +43,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 public class AmazonS3DataStore extends AbstractDataStore {
@@ -187,56 +190,10 @@ public class AmazonS3DataStore extends AbstractDataStore {
                         "The content length (" + object.size() + " byte) is over " + config.maxSize + " byte. The url is " + url);
             }
 
-            final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap);
-            final Map<String, Object> objectMap = new HashMap<>();
-
             logger.info("Crawling URL: {}", url);
 
-            objectMap.put(OBJECT_URL, url);
-            objectMap.put(OBJECT_MIMETYPE, response.contentType());
-            objectMap.put(OBJECT_FILETYPE, ComponentUtil.getFileTypeHelper().get(response.contentType()));
-            objectMap.put(OBJECT_CONTENTS, getObjectContents(stream, response.contentType(), object.key(), url, config.ignoreError));
-            objectMap.put(OBJECT_FILENAME, FilenameUtils.getName(object.key()));
-            objectMap.put(OBJECT_MANAGEMENT_URL, getManagementUrl(client.getRegion().id(), bucket.name(), object.key()));
-
-            objectMap.put(OBJECT_BUCKET_NAME, bucket.name());
-            objectMap.put(OBJECT_BUCKET_CREATION_DATE, toDate(bucket.creationDate()));
-
-            objectMap.put(OBJECT_KEY, object.key());
-            objectMap.put(OBJECT_E_TAG, object.eTag());
-            objectMap.put(OBJECT_LAST_MODIFIED, toDate(object.lastModified()));
-            final Owner owner = object.owner();
-            objectMap.put(OBJECT_OWNER_ID, Objects.nonNull(owner) ? owner.id() : null);
-            objectMap.put(OBJECT_OWNER_DISPLAY_NAME, Objects.nonNull(owner) ? owner.displayName() : null);
-            objectMap.put(OBJECT_SIZE, object.size());
-            objectMap.put(OBJECT_STORAGE_CLASS, object.storageClassAsString());
-            objectMap.put(OBJECT_ACCEPT_RANGES, response.acceptRanges());
-            objectMap.put(OBJECT_CACHE_CONTROL, response.cacheControl());
-            objectMap.put(OBJECT_CONTENT_DISPOSITION, response.contentDisposition());
-            objectMap.put(OBJECT_CONTENT_ENCODING, response.contentEncoding());
-            objectMap.put(OBJECT_CONTENT_LANGUAGE, response.contentLanguage());
-            objectMap.put(OBJECT_CONTENT_LENGTH, response.contentLength());
-            objectMap.put(OBJECT_CONTENT_RANGE, response.contentRange());
-            objectMap.put(OBJECT_CONTENT_TYPE, response.contentType());
-            objectMap.put(OBJECT_DELETE_MARKER, response.deleteMarker());
-            objectMap.put(OBJECT_EXPIRATION, response.expiration());
-            objectMap.put(OBJECT_EXPIRES, toDate(response.expires()));
-            objectMap.put(OBJECT_MISSING_META, response.missingMeta());
-            objectMap.put(OBJECT_OBJECT_LOCK_LEGAL_HOLD_STATUS, response.objectLockLegalHoldStatusAsString());
-            objectMap.put(OBJECT_OBJECT_LOCK_MODE, response.objectLockModeAsString());
-            objectMap.put(OBJECT_OBJECT_LOCK_RETAIN_UNTIL_DATE, toDate(response.objectLockRetainUntilDate()));
-            objectMap.put(OBJECT_PARTS_COUNT, response.partsCount());
-            objectMap.put(OBJECT_REPLICATION_STATUS, response.replicationStatusAsString());
-            objectMap.put(OBJECT_REQUEST_CHARGED, response.requestChargedAsString());
-            objectMap.put(OBJECT_RESTORE, response.restore());
-            objectMap.put(OBJECT_SERVER_SIDE_ENCRYPTION, response.serverSideEncryptionAsString());
-            objectMap.put(OBJECT_SSE_CUSTOMER_ALGORITHM, response.sseCustomerAlgorithm());
-            objectMap.put(OBJECT_SSE_CUSTOMER_KEY_MD5, response.sseCustomerKeyMD5());
-            objectMap.put(OBJECT_SSEKMS_KEY_ID, response.ssekmsKeyId());
-            objectMap.put(OBJECT_TAG_COUNT, response.tagCount());
-            objectMap.put(OBJECT_VERSION_ID, response.versionId());
-            objectMap.put(OBJECT_WEBSITE_REDIRECT_LOCATION, response.websiteRedirectLocation());
-
+            final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap);
+            final Map<String, Object> objectMap = getObjectMap(client.getRegion().id(), bucket, object, url, stream, config.ignoreError);
             resultMap.put(OBJECT, objectMap);
 
             if (logger.isDebugEnabled()) {
@@ -282,6 +239,57 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
+    protected Map<String, Object> getObjectMap(final String region, final Bucket bucket, final S3Object object, final String url,
+            final ResponseInputStream<GetObjectResponse> stream, final boolean ignoreError) throws URISyntaxException {
+        final Map<String, Object> map = new HashMap<>();
+        final GetObjectResponse response = stream.response();
+        map.put(OBJECT_URL, url);
+        map.put(OBJECT_MIMETYPE, response.contentType());
+        map.put(OBJECT_FILETYPE, ComponentUtil.getFileTypeHelper().get(response.contentType()));
+        map.put(OBJECT_CONTENTS, getObjectContents(stream, response.contentType(), object.key(), url, ignoreError));
+        map.put(OBJECT_FILENAME, FilenameUtils.getName(object.key()));
+        map.put(OBJECT_MANAGEMENT_URL, getManagementUrl(region, bucket.name(), object.key()));
+
+        map.put(OBJECT_BUCKET_NAME, bucket.name());
+        map.put(OBJECT_BUCKET_CREATION_DATE, toDate(bucket.creationDate()));
+
+        map.put(OBJECT_KEY, object.key());
+        map.put(OBJECT_E_TAG, object.eTag());
+        map.put(OBJECT_LAST_MODIFIED, toDate(object.lastModified()));
+        final Owner owner = object.owner();
+        map.put(OBJECT_OWNER_ID, Objects.nonNull(owner) ? owner.id() : null);
+        map.put(OBJECT_OWNER_DISPLAY_NAME, Objects.nonNull(owner) ? owner.displayName() : null);
+        map.put(OBJECT_SIZE, object.size());
+        map.put(OBJECT_STORAGE_CLASS, object.storageClassAsString());
+        map.put(OBJECT_ACCEPT_RANGES, response.acceptRanges());
+        map.put(OBJECT_CACHE_CONTROL, response.cacheControl());
+        map.put(OBJECT_CONTENT_DISPOSITION, response.contentDisposition());
+        map.put(OBJECT_CONTENT_ENCODING, response.contentEncoding());
+        map.put(OBJECT_CONTENT_LANGUAGE, response.contentLanguage());
+        map.put(OBJECT_CONTENT_LENGTH, response.contentLength());
+        map.put(OBJECT_CONTENT_RANGE, response.contentRange());
+        map.put(OBJECT_CONTENT_TYPE, response.contentType());
+        map.put(OBJECT_DELETE_MARKER, response.deleteMarker());
+        map.put(OBJECT_EXPIRATION, response.expiration());
+        map.put(OBJECT_EXPIRES, toDate(response.expires()));
+        map.put(OBJECT_MISSING_META, response.missingMeta());
+        map.put(OBJECT_OBJECT_LOCK_LEGAL_HOLD_STATUS, response.objectLockLegalHoldStatusAsString());
+        map.put(OBJECT_OBJECT_LOCK_MODE, response.objectLockModeAsString());
+        map.put(OBJECT_OBJECT_LOCK_RETAIN_UNTIL_DATE, toDate(response.objectLockRetainUntilDate()));
+        map.put(OBJECT_PARTS_COUNT, response.partsCount());
+        map.put(OBJECT_REPLICATION_STATUS, response.replicationStatusAsString());
+        map.put(OBJECT_REQUEST_CHARGED, response.requestChargedAsString());
+        map.put(OBJECT_RESTORE, response.restore());
+        map.put(OBJECT_SERVER_SIDE_ENCRYPTION, response.serverSideEncryptionAsString());
+        map.put(OBJECT_SSE_CUSTOMER_ALGORITHM, response.sseCustomerAlgorithm());
+        map.put(OBJECT_SSE_CUSTOMER_KEY_MD5, response.sseCustomerKeyMD5());
+        map.put(OBJECT_SSEKMS_KEY_ID, response.ssekmsKeyId());
+        map.put(OBJECT_TAG_COUNT, response.tagCount());
+        map.put(OBJECT_VERSION_ID, response.versionId());
+        map.put(OBJECT_WEBSITE_REDIRECT_LOCATION, response.websiteRedirectLocation());
+        return map;
+    }
+
     protected String getObjectContents(final ResponseInputStream<GetObjectResponse> in, final String contentType, final String key,
             final String url, final boolean ignoreError) {
         try {
@@ -307,7 +315,6 @@ public class AmazonS3DataStore extends AbstractDataStore {
             throws URISyntaxException {
         if (Objects.nonNull(endpoint)) {
             final URI uri = URI.create(endpoint);
-            System.out.println(bucket + "." + uri.getAuthority());
             return new URI(uri.getScheme(), bucket + "." + uri.getAuthority(), "/" + object, null, null).toASCIIString();
         }
         return new URI("https", bucket + ".s3-" + region + ".amazonaws.com", "/" + object, null).toASCIIString();
