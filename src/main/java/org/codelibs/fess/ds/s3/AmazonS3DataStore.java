@@ -43,9 +43,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Stream;
 
 public class AmazonS3DataStore extends AbstractDataStore {
@@ -123,19 +121,22 @@ public class AmazonS3DataStore extends AbstractDataStore {
         if (logger.isDebugEnabled()) {
             logger.debug("config: {}", config);
         }
-        final ExecutorService executorService =
-                Executors.newFixedThreadPool(Integer.parseInt(paramMap.getOrDefault(NUMBER_OF_THREADS, "1")));
+        final ExecutorService executorService = newFixedThreadPool(Integer.parseInt(paramMap.getOrDefault(NUMBER_OF_THREADS, "1")));
 
         try {
             final AmazonS3Client client = createClient(paramMap);
             crawlBuckets(dataConfig, callback, paramMap, scriptMap, defaultDataMap, config, executorService, client);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Shutting down thread executor.");
+            }
+            executorService.shutdown();
             executorService.awaitTermination(60, TimeUnit.SECONDS);
         } catch (final InterruptedException e) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Interrupted.", e);
             }
         } finally {
-            executorService.shutdown();
+            executorService.shutdownNow();
         }
     }
 
@@ -317,6 +318,14 @@ public class AmazonS3DataStore extends AbstractDataStore {
 
     protected Date toDate(final Instant instant) {
         return Objects.nonNull(instant) ? Date.from(instant) : null;
+    }
+
+    protected ExecutorService newFixedThreadPool(final int nThreads) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Executor Thread Pool: " + nThreads);
+        }
+        return new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(nThreads),
+                new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     protected AmazonS3Client createClient(final Map<String, String> paramMap) {
