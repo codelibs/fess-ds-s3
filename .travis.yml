@@ -5,12 +5,19 @@ language: java
 jdk:
   - openjdk8
 
+services:
+  - docker
+
 cache:
   directories:
     - $HOME/.m2/repository
 
 before_script:
   - java -version
+
+before_install:
+  - docker pull localstack/localstack
+  - docker run -d -e SERVICES=s3 -p 4572:4572 localstack/localstack
 
 script:
   - mvn test
