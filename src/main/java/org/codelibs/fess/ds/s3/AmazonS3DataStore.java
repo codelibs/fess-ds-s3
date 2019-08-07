@@ -50,9 +50,11 @@ public class AmazonS3DataStore extends AbstractDataStore {
 
     private static final Logger logger = LoggerFactory.getLogger(AmazonS3DataStore.class);
 
+    protected static final int DEFAULT_MAX_KEYS = 1000;
     protected static final long DEFAULT_MAX_SIZE = 10000000L; // 10m
 
     // parameters
+    protected static final String MAX_KEYS = "max_keys";
     protected static final String MAX_SIZE = "max_size";
     protected static final String IGNORE_ERROR = "ignore_error";
     protected static final String SUPPORTED_MIMETYPES = "supported_mimetypes";
@@ -150,7 +152,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
             if (logger.isDebugEnabled()) {
                 logger.debug("Crawling bucket objects: {}", bucket.name());
             }
-            client.getObjects(bucket.name(), object -> executorService
+            client.getObjects(bucket.name(), config.maxKeys, object -> executorService
                     .execute(() -> storeObject(dataConfig, callback, paramMap, scriptMap, defaultDataMap, config, client, bucket, object)));
         });
     }
@@ -333,16 +335,27 @@ public class AmazonS3DataStore extends AbstractDataStore {
     }
 
     protected static class Config {
+        final int maxKeys;
         final long maxSize;
         final boolean ignoreError;
         final String[] supportedMimeTypes;
         final UrlFilter urlFilter;
 
         Config(final Map<String, String> paramMap) {
+            maxKeys = getMaxKeys(paramMap);
             maxSize = getMaxSize(paramMap);
             ignoreError = isIgnoreError(paramMap);
             supportedMimeTypes = getSupportedMimeTypes(paramMap);
             urlFilter = getUrlFilter(paramMap);
+        }
+
+        private int getMaxKeys(final Map<String, String> paramMap) {
+            final String value = paramMap.get(MAX_KEYS);
+            try {
+                return StringUtil.isNotBlank(value) ? Integer.parseInt(value) : DEFAULT_MAX_KEYS;
+            } catch (final NumberFormatException e) {
+                return DEFAULT_MAX_KEYS;
+            }
         }
 
         private long getMaxSize(final Map<String, String> paramMap) {
