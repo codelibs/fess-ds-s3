@@ -116,7 +116,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected String extractorName = "tikaExtractor";
 
     protected String getName() {
-        return "AmazonS3";
+        return this.getClass().getSimpleName();
     }
 
     @Override
