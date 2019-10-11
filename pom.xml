@@ -7,7 +7,7 @@
 	<artifactId>fess-ds-s3</artifactId>
 	<packaging>jar</packaging>
 	<name>Amazon S3 Data Store</name>
-	<version>13.3.0-SNAPSHOT</version>
+	<version>13.4.0-SNAPSHOT</version>
 	<url>https://fess.codelibs.org/</url>
 	<inceptionYear>2009</inceptionYear>
 	<licenses>
@@ -37,7 +37,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<fess.version>13.3.0-SNAPSHOT</fess.version>
+		<fess.version>13.4.0</fess.version>
 
 		<aws.version>2.9.17</aws.version>
 
@@ -50,11 +50,11 @@
 		<mailflute.version>0.6.0</mailflute.version>
 
 		<!-- Partner Library -->
-		<slf4j.version>1.7.27</slf4j.version>
+		<slf4j.version>1.7.28</slf4j.version>
 		<log4j.version>2.11.1</log4j.version>
-		<jackson.version>2.9.9</jackson.version>
+		<jackson.version>2.9.10</jackson.version>
 		<commons.fileupload.version>1.4</commons.fileupload.version>
-		<asm.version>7.1</asm.version>
+		<asm.version>7.2</asm.version>
 		<tika.version>1.22</tika.version>
 
 		<!-- Testing -->
@@ -65,14 +65,14 @@
 		<utflute.version>0.9.1</utflute.version>
 
 		<!-- Crawler -->
-		<crawler.version>3.3.0</crawler.version>
+		<crawler.version>3.4.0</crawler.version>
 
 		<!-- Suggest -->
-		<suggest.version>7.3.0</suggest.version>
+		<suggest.version>7.4.0</suggest.version>
 
 		<!-- Elasticsearch -->
-		<elasticsearch.version>7.3.0</elasticsearch.version>
-		<elasticsearch.httpclient.version>7.3.0</elasticsearch.httpclient.version>
+		<elasticsearch.version>7.4.0</elasticsearch.version>
+		<elasticsearch.httpclient.version>7.4.0</elasticsearch.httpclient.version>
 		<cluster.runner.version>${elasticsearch.version}.0</cluster.runner.version>
 
 		<!-- Tomcat -->
