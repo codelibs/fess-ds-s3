@@ -15,6 +15,21 @@
  */
 package org.codelibs.fess.ds.s3;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.apache.tika.io.FilenameUtils;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.core.stream.StreamUtil;
@@ -38,16 +53,6 @@ import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.Owner;
 import software.amazon.awssdk.services.s3.model.S3Object;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 public class AmazonS3DataStore extends AbstractDataStore {
 
@@ -128,8 +133,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
         final ExecutorService executorService = newFixedThreadPool(Integer.parseInt(paramMap.getOrDefault(NUMBER_OF_THREADS, "1")));
 
-        try {
-            final AmazonS3Client client = createClient(paramMap);
+        try (final AmazonS3Client client = createClient(paramMap)) {
             crawlBuckets(dataConfig, callback, paramMap, scriptMap, defaultDataMap, config, executorService, client);
             if (logger.isDebugEnabled()) {
                 logger.debug("Shutting down thread executor.");
@@ -164,8 +168,9 @@ public class AmazonS3DataStore extends AbstractDataStore {
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final Config config, final AmazonS3Client client,
             final Bucket bucket, final S3Object object) {
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
+        String url = StringUtil.EMPTY;
         try {
-            final String url = getUrl(client.getEndpoint(), client.getRegion().id(), bucket.name(), object.key());
+            url = getUrl(client.getEndpoint(), client.getRegion().id(), bucket.name(), object.key());
 
             final UrlFilter urlFilter = config.urlFilter;
             if (urlFilter != null && !urlFilter.match(url)) {
@@ -231,11 +236,11 @@ public class AmazonS3DataStore extends AbstractDataStore {
             }
 
             final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
-            failureUrlService.store(dataConfig, errorName, "", target);
+            failureUrlService.store(dataConfig, errorName, url, target);
         } catch (final Throwable t) {
             logger.warn("Crawling Access Exception at : " + dataMap, t);
             final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
-            failureUrlService.store(dataConfig, t.getClass().getCanonicalName(), "", t);
+            failureUrlService.store(dataConfig, t.getClass().getCanonicalName(), url, t);
         }
     }
 
@@ -311,8 +316,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
-    protected String getUrl(final String endpoint, final String region, final String bucket, final String object)
-            throws URISyntaxException {
+    protected String getUrl(final String endpoint, final String region, final String bucket, final String object) throws URISyntaxException {
         if (Objects.nonNull(endpoint)) {
             final URI uri = URI.create(endpoint);
             return new URI(uri.getScheme(), bucket + "." + uri.getAuthority(), "/" + object, null, null).toASCIIString();
@@ -331,7 +335,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
 
     protected ExecutorService newFixedThreadPool(final int nThreads) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Executor Thread Pool: " + nThreads);
+            logger.debug("Executor Thread Pool: {}", nThreads);
         }
         return new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(nThreads),
                 new ThreadPoolExecutor.CallerRunsPolicy());

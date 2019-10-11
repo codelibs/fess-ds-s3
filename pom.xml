@@ -39,7 +39,7 @@
 
 		<fess.version>13.3.0-SNAPSHOT</fess.version>
 
-		<aws.version>2.5.59</aws.version>
+		<aws.version>2.9.17</aws.version>
 
 		<!-- Main Framework -->
 		<dbflute.version>1.2.0</dbflute.version>
@@ -65,14 +65,14 @@
 		<utflute.version>0.9.1</utflute.version>
 
 		<!-- Crawler -->
-		<crawler.version>3.3.0-SNAPSHOT</crawler.version>
+		<crawler.version>3.3.0</crawler.version>
 
 		<!-- Suggest -->
-		<suggest.version>7.3.0-SNAPSHOT</suggest.version>
+		<suggest.version>7.3.0</suggest.version>
 
 		<!-- Elasticsearch -->
 		<elasticsearch.version>7.3.0</elasticsearch.version>
-		<elasticsearch.httpclient.version>7.3.0-SNAPSHOT</elasticsearch.httpclient.version>
+		<elasticsearch.httpclient.version>7.3.0</elasticsearch.httpclient.version>
 		<cluster.runner.version>${elasticsearch.version}.0</cluster.runner.version>
 
 		<!-- Tomcat -->
@@ -263,9 +263,14 @@
 			<version>${aws.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>apache-client</artifactId>
+			<version>${aws.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-s3</artifactId>
-			<version>1.11.593</version>
+			<version>1.11.649</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

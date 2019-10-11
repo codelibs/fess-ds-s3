@@ -15,6 +15,11 @@
  */
 package org.codelibs.fess.ds.s3;
 
+import java.net.URI;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.exception.DataStoreException;
 import org.slf4j.Logger;
@@ -23,6 +28,8 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.apache.ProxyConfiguration;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
@@ -31,10 +38,6 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
 
 public class AmazonS3Client implements AutoCloseable {
 
@@ -45,6 +48,8 @@ public class AmazonS3Client implements AutoCloseable {
     protected static final String ACCESS_KEY_ID = "access_key_id";
     protected static final String SECRET_KEY = "secret_key";
     protected static final String ENDPOINT = "endpoint";
+    protected static final String PROXY_HOST_PARAM = "proxy_host";
+    protected static final String PROXY_PORT_PARAM = "proxy_port";
 
     // other parameters
     protected static final String MAX_CACHED_CONTENT_SIZE = "max_cached_content_size";
@@ -69,10 +74,27 @@ public class AmazonS3Client implements AutoCloseable {
         }
         this.region = Region.of(region);
         this.endpoint = params.get(ENDPOINT);
+        final String httpProxyHost = params.getOrDefault(PROXY_HOST_PARAM, StringUtil.EMPTY);
+        final String httpProxyPort = params.getOrDefault(PROXY_PORT_PARAM, StringUtil.EMPTY);
         final AwsCredentialsProvider awsCredentialsProvider = new AwsBasicCredentialsProvider(params);
         try {
+            final ApacheHttpClient.Builder httpClientBuilder = ApacheHttpClient.builder();
+
+            if (!httpProxyHost.isEmpty() ) {
+                if (httpProxyPort.isEmpty()) {
+                    throw new DataStoreException(PROXY_PORT_PARAM + " required.");
+                }
+                try {
+                    httpClientBuilder.proxyConfiguration(ProxyConfiguration.builder()
+                        .useSystemPropertyValues(true).endpoint(URI.create(httpProxyHost + ":" + Integer.parseInt(httpProxyPort))).build());
+                } catch (final NumberFormatException e) {
+                    throw new DataStoreException("parameter " + "'" + PROXY_PORT_PARAM + "' invalid.", e);
+                }
+            }
+
             final S3ClientBuilder builder = S3Client.builder() //
                     .region(this.region) //
+                    .httpClient(httpClientBuilder.build()) //
                     .credentialsProvider(awsCredentialsProvider);
             if (Objects.nonNull(this.endpoint)) {
                 builder.endpointOverride(URI.create(this.endpoint));
@@ -81,6 +103,7 @@ public class AmazonS3Client implements AutoCloseable {
         } catch (final Exception e) {
             throw new DataStoreException("Failed to create a client.", e);
         }
+
     }
 
     public Region getRegion() {
@@ -125,8 +148,8 @@ public class AmazonS3Client implements AutoCloseable {
     }
 
     static class AwsBasicCredentialsProvider implements AwsCredentialsProvider {
-        String accessKeyId;
-        String secretAccessKey;
+        final String accessKeyId;
+        final String secretAccessKey;
 
         AwsBasicCredentialsProvider(final Map<String, String> params) {
             accessKeyId = params.getOrDefault(ACCESS_KEY_ID, StringUtil.EMPTY);
