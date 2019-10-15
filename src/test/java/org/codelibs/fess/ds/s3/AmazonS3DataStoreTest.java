@@ -17,6 +17,9 @@ package org.codelibs.fess.ds.s3;
 
 import cloud.localstack.LocalstackTestRunner;
 import org.apache.tika.io.FilenameUtils;
+import org.codelibs.fess.ds.callback.IndexUpdateCallback;
+import org.codelibs.fess.es.config.exentity.DataConfig;
+import org.codelibs.fess.mylasta.direction.FessConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -29,13 +32,14 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.net.URISyntaxException;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import static cloud.localstack.Localstack.getEndpointS3;
 import static cloud.localstack.TestUtils.DEFAULT_REGION;
 import static org.codelibs.fess.ds.s3.TestUtils.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @RunWith(LocalstackTestRunner.class)
 public class AmazonS3DataStoreTest {
@@ -74,7 +78,6 @@ public class AmazonS3DataStoreTest {
                     final String url = dataStore.getUrl(getEndpointS3(), DEFAULT_REGION, bucket.name(), object.key());
                     final ResponseInputStream<GetObjectResponse> stream = client.getObject(bucket.name(), object.key());
                     final Map<String, Object> map = dataStore.getObjectMap(DEFAULT_REGION, bucket, object, url, stream, false);
-                    logger.debug("objectMap: {}", map);
                     assertEquals(url, map.get("url"));
                     assertEquals("text/plain", map.get("mimetype"));
                     assertEquals("txt", map.get("filetype"));
@@ -121,4 +124,64 @@ public class AmazonS3DataStoreTest {
                 dataStore.getManagementUrl("ap-northeast-1", "fess", "dir/d i r/sample.txt"));
     }
 
+    @Test
+    public void test_storeData() {
+        final DataConfig dataConfig = new DataConfig();
+        final Map<String, String> paramMap = getParams();
+        final Map<String, String> scriptMap = new HashMap<>();
+        final Map<String, Object> defaultDataMap = new HashMap<>();
+
+        final FessConfig fessConfig = ComponentUtil.getFessConfig();
+        scriptMap.put(fessConfig.getIndexFieldUrl(), "object.url");
+        scriptMap.put(fessConfig.getIndexFieldTitle(), "object.key");
+        scriptMap.put(fessConfig.getIndexFieldContent(), "object.contents");
+        scriptMap.put(fessConfig.getIndexFieldMimetype(), "object.mimetype");
+        scriptMap.put(fessConfig.getIndexFieldFiletype(), "object.filetype");
+        scriptMap.put(fessConfig.getIndexFieldFilename(), "object.filename");
+        scriptMap.put(fessConfig.getIndexFieldContentLength(), "object.size");
+        scriptMap.put(fessConfig.getIndexFieldLastModified(), "object.last_modified");
+
+        dataStore.storeData(dataConfig, new TestCallback() {
+            @Override
+            public void test(Map<String, String> paramMap, Map<String, Object> dataMap) {
+                assertNotNull(dataMap.get(fessConfig.getIndexFieldUrl()));
+                assertNotNull(dataMap.get(fessConfig.getIndexFieldTitle()));
+                assertNotNull(dataMap.get(fessConfig.getIndexFieldContent()));
+                assertNotNull(dataMap.get(fessConfig.getIndexFieldMimetype()));
+                assertNotNull(dataMap.get(fessConfig.getIndexFieldFiletype()));
+                assertNotNull(dataMap.get(fessConfig.getIndexFieldFilename()));
+                assertNotNull(dataMap.get(fessConfig.getIndexFieldContentLength()));
+                assertNotNull(dataMap.get(fessConfig.getIndexFieldLastModified()));
+            }
+        }, paramMap, scriptMap, defaultDataMap);
+    }
+
+    private static abstract class TestCallback implements IndexUpdateCallback {
+        private long documentSize = 0;
+        private long executeTime = 0;
+
+        abstract void test(Map<String, String> paramMap, Map<String, Object> dataMap);
+
+        @Override
+        public void store(Map<String, String> paramMap, Map<String, Object> dataMap) {
+            final long startTime = System.currentTimeMillis();
+            test(paramMap, dataMap);
+            executeTime += System.currentTimeMillis() - startTime;
+            documentSize++;
+        }
+
+        @Override
+        public long getDocumentSize() {
+            return documentSize;
+        }
+
+        @Override
+        public long getExecuteTime() {
+            return executeTime;
+        }
+
+        @Override
+        public void commit() {
+        }
+    }
 }
