@@ -19,33 +19,49 @@ import cloud.localstack.Localstack;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectListing;
+import org.apache.commons.io.IOUtils;
 import org.codelibs.core.io.ResourceUtil;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static cloud.localstack.TestUtils.*;
 import static org.junit.Assert.fail;
 
 class TestUtils {
 
-    static final String BUCKET_NAME = "fess";
-    static final String[] FILES = { "sample-0.txt", "sample-1.txt" };
+    static final String[] BUCKETS = { "fess-0", "fess-1" };
+    static final String[] PATHS = { "files/sample-0.txt", "files/sample-1.txt" };
+    static final Map<String, String> FILE_MAP = new LinkedHashMap<>();
+
+    static {
+        for (final String path : PATHS) {
+            try {
+                FILE_MAP.put(path, IOUtils.toString(ResourceUtil.getResourceAsStream(path), StandardCharsets.UTF_8));
+            } catch (final IOException e) {
+                fail(e.getMessage());
+            }
+        }
+    }
 
     static void initializeBuckets() {
         resetBuckets();
         final AmazonS3 s3 = getClientS3();
-        final Bucket bucket = s3.createBucket(BUCKET_NAME);
-        Stream.of(FILES).forEach(path -> {
-            try {
-                final File file = new File(ResourceUtil.getResource(path).toURI());
-                s3.putObject(bucket.getName(), file.getName(), file);
-            } catch (final Exception e) {
-                fail(e.getMessage());
+        for (final String bucketName : BUCKETS) {
+            final Bucket bucket = s3.createBucket(bucketName);
+            for (final String path : PATHS) {
+                try {
+                    final File file = ResourceUtil.getResourceAsFile(path);
+                    s3.putObject(bucket.getName(), path, file);
+                } catch (final Exception e) {
+                    fail(e.getMessage());
+                }
             }
-        });
+        }
     }
 
     static void resetBuckets() {

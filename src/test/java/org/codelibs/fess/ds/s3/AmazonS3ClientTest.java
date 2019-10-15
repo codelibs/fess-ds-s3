@@ -24,11 +24,13 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import static org.codelibs.fess.ds.s3.TestUtils.*;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.junit.Assert.*;
 
 @RunWith(LocalstackTestRunner.class)
 public class AmazonS3ClientTest {
@@ -36,7 +38,7 @@ public class AmazonS3ClientTest {
     private static AmazonS3Client client;
 
     @BeforeClass
-    public static void setUp() throws Exception {
+    public static void setUp() {
         initializeBuckets();
         client = getClient();
     }
@@ -48,25 +50,40 @@ public class AmazonS3ClientTest {
 
     @Test
     public void test_getBuckets() {
-        client.getBuckets(bucket -> assertEquals(BUCKET_NAME, bucket.name()));
+        final List<String> buckets = new ArrayList<>();
+        client.getBuckets(bucket -> buckets.add(bucket.name()));
+        assertThat(buckets, hasItems(BUCKETS));
     }
 
     @Test
     public void test_getObjects() {
-        final Iterator<String> itr = Stream.of(FILES).iterator();
-        client.getObjects(BUCKET_NAME, object -> assertEquals(itr.next(), object.key()));
+        for (final String bucketName : BUCKETS) {
+            final List<String> objects = new ArrayList<>();
+            client.getObjects(bucketName, object -> objects.add(object.key()));
+            assertThat(objects, hasItems(PATHS));
+        }
     }
 
     @Test
     public void test_getObjectsMaxKeys() {
-        final Iterator<String> itr = Stream.of(FILES).iterator();
-        client.getObjects(BUCKET_NAME, 1, object -> assertEquals(itr.next(), object.key()));
+        for (final String bucketName : BUCKETS) {
+            final List<String> objects = new ArrayList<>();
+            client.getObjects(bucketName, 1, object -> objects.add(object.key()));
+            assertThat(objects, hasItems(PATHS));
+        }
     }
 
     @Test
-    public void test_getObject() throws IOException {
-        assertEquals("hogehoge", IOUtils.toString(client.getObject(BUCKET_NAME, FILES[0]), StandardCharsets.UTF_8));
-        assertEquals("hugahuga", IOUtils.toString(client.getObject(BUCKET_NAME, FILES[1]), StandardCharsets.UTF_8));
+    public void test_getObject() {
+        for (final String bucketName : BUCKETS) {
+            for (final Map.Entry<String, String> entry : FILE_MAP.entrySet()) {
+                try {
+                    assertEquals(entry.getValue(), IOUtils.toString(client.getObject(bucketName, entry.getKey()), StandardCharsets.UTF_8));
+                } catch (final IOException e) {
+                    fail(e.getMessage());
+                }
+            }
+        }
     }
 
 }
