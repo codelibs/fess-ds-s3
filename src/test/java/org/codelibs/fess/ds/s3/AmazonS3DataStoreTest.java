@@ -16,10 +16,6 @@
 package org.codelibs.fess.ds.s3;
 
 import cloud.localstack.LocalstackTestRunner;
-import org.codelibs.fess.crawler.container.StandardCrawlerContainer;
-import org.codelibs.fess.crawler.extractor.ExtractorFactory;
-import org.codelibs.fess.crawler.extractor.impl.TextExtractor;
-import org.codelibs.fess.helper.FileTypeHelper;
 import org.codelibs.fess.util.ComponentUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -47,7 +43,6 @@ public class AmazonS3DataStoreTest {
     @BeforeClass
     public static void setUp() throws Exception {
         initializeContainer();
-        initializeComponents();
         initializeBuckets();
         dataStore = new AmazonS3DataStore();
     }
@@ -59,18 +54,6 @@ public class AmazonS3DataStoreTest {
         }
         SingletonLaContainerFactory.setConfigPath("test_app.xml");
         SingletonLaContainerFactory.init();
-    }
-
-    private static void initializeComponents() {
-        final StandardCrawlerContainer crawlerContainer = new StandardCrawlerContainer() //
-                .singleton("fileTypeHelper", FileTypeHelper.class) //
-                .singleton("textExtractor", TextExtractor.class) //
-                .singleton("extractorFactory", ExtractorFactory.class);
-        final ExtractorFactory extractorFactory = crawlerContainer.getComponent("extractorFactory");
-        extractorFactory.addExtractor("text/plain", crawlerContainer.getComponent("textExtractor"));
-        ComponentUtil.register(crawlerContainer.getComponent("fileTypeHelper"), "fileTypeHelper");
-        ComponentUtil.register(crawlerContainer.getComponent("textExtractor"), "textExtractor");
-        ComponentUtil.register(extractorFactory, "extractorFactory");
     }
 
     @AfterClass
