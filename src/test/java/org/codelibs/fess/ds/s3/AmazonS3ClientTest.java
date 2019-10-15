@@ -15,10 +15,12 @@
  */
 package org.codelibs.fess.ds.s3;
 
+import cloud.localstack.LocalstackTestRunner;
 import org.apache.commons.io.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +30,7 @@ import java.util.stream.Stream;
 import static org.codelibs.fess.ds.s3.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 
+@RunWith(LocalstackTestRunner.class)
 public class AmazonS3ClientTest {
 
     private static AmazonS3Client client;

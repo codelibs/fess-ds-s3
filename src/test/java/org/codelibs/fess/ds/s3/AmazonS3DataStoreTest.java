@@ -15,12 +15,17 @@
  */
 package org.codelibs.fess.ds.s3;
 
+import cloud.localstack.LocalstackTestRunner;
 import org.codelibs.fess.crawler.container.StandardCrawlerContainer;
 import org.codelibs.fess.crawler.extractor.ExtractorFactory;
 import org.codelibs.fess.crawler.extractor.impl.TextExtractor;
 import org.codelibs.fess.helper.FileTypeHelper;
 import org.codelibs.fess.util.ComponentUtil;
-import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.lastaflute.di.core.factory.SingletonLaContainerFactory;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
@@ -31,24 +36,32 @@ import java.util.Objects;
 import static cloud.localstack.Localstack.getEndpointS3;
 import static cloud.localstack.TestUtils.DEFAULT_REGION;
 import static org.codelibs.fess.ds.s3.TestUtils.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-public class AmazonS3DataStoreTest extends LastaFluteTestCase {
+@RunWith(LocalstackTestRunner.class)
+public class AmazonS3DataStoreTest {
 
-    private AmazonS3DataStore dataStore;
+    private static AmazonS3DataStore dataStore;
 
-    @Override
-    protected String prepareConfigFile() {
-        return "test_app.xml";
+    @BeforeClass
+    public static void setUp() throws Exception {
+        initializeContainer();
+        initializeComponents();
+        initializeBuckets();
+        dataStore = new AmazonS3DataStore();
     }
 
-    @Override
-    protected boolean isSuppressTestCaseTransaction() {
-        return true;
+    private static void initializeContainer() {
+        if (SingletonLaContainerFactory.hasContainer()) {
+            SingletonLaContainerFactory.destroy();
+            SingletonLaContainerFactory.setExternalContext(null);
+        }
+        SingletonLaContainerFactory.setConfigPath("test_app.xml");
+        SingletonLaContainerFactory.init();
     }
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+    private static void initializeComponents() {
         final StandardCrawlerContainer crawlerContainer = new StandardCrawlerContainer() //
                 .singleton("fileTypeHelper", FileTypeHelper.class) //
                 .singleton("textExtractor", TextExtractor.class) //
@@ -58,17 +71,15 @@ public class AmazonS3DataStoreTest extends LastaFluteTestCase {
         ComponentUtil.register(crawlerContainer.getComponent("fileTypeHelper"), "fileTypeHelper");
         ComponentUtil.register(crawlerContainer.getComponent("textExtractor"), "textExtractor");
         ComponentUtil.register(extractorFactory, "extractorFactory");
-        dataStore = new AmazonS3DataStore();
-        initializeBuckets();
     }
 
-    @Override
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDown() throws Exception {
         resetBuckets();
         ComponentUtil.setFessConfig(null);
-        super.tearDown();
     }
 
+    @Test
     public void test_getObjectMap() {
         final AmazonS3Client client = getClient();
         client.getBuckets(bucket -> {
@@ -91,6 +102,7 @@ public class AmazonS3DataStoreTest extends LastaFluteTestCase {
         });
     }
 
+    @Test
     public void test_getUrl() throws Exception {
         assertEquals("https://fess.s3-ap-northeast-1.amazonaws.com/dir/d%20i%20r/sample.txt",
                 dataStore.getUrl(null, "ap-northeast-1", "fess", "dir/d i r/sample.txt"));
@@ -98,6 +110,7 @@ public class AmazonS3DataStoreTest extends LastaFluteTestCase {
                 dataStore.getUrl("http://localhost:4572", "ap-northeast-1", "fess", "dir/d i r/sample.txt"));
     }
 
+    @Test
     public void test_getManagementUrl() throws Exception {
         assertEquals("https://s3.console.aws.amazon.com/s3/object/fess/dir/d%20i%20r/sample.txt?region=ap-northeast-1",
                 dataStore.getManagementUrl("ap-northeast-1", "fess", "dir/d i r/sample.txt"));

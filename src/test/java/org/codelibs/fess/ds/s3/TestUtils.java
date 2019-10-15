@@ -71,7 +71,7 @@ class TestUtils {
         return new AmazonS3Client(getParams());
     }
 
-    static Map<String, String> getParams() {
+    private static Map<String, String> getParams() {
         final Map<String, String> params = new HashMap<>();
         params.put(AmazonS3Client.ACCESS_KEY_ID, TEST_ACCESS_KEY);
         params.put(AmazonS3Client.SECRET_KEY, TEST_SECRET_KEY);
