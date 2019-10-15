@@ -4,7 +4,12 @@
 <components>
 	<include path="convention.xml" />
 	<include path="lastaflute.xml" />
-	<component name="fileTypeHelper" class="org.codelibs.fess.helper.FileTypeHelper" />
+	<component name="fileTypeHelper" class="org.codelibs.fess.helper.FileTypeHelper">
+		<postConstruct name="add">
+			<arg>"text/plain"</arg>
+			<arg>"txt"</arg>
+		</postConstruct>
+	</component>
 	<component name="crawlerContainer"
 		class="org.codelibs.fess.crawler.container.LastaCrawlerContainer" />
 	<component name="tikaExtractor"

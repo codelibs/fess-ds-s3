@@ -16,6 +16,7 @@
 package org.codelibs.fess.ds.s3;
 
 import cloud.localstack.LocalstackTestRunner;
+import org.apache.tika.io.FilenameUtils;
 import org.codelibs.fess.util.ComponentUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -74,8 +75,32 @@ public class AmazonS3DataStoreTest {
                     final ResponseInputStream<GetObjectResponse> stream = client.getObject(bucket.name(), object.key());
                     final Map<String, Object> map = dataStore.getObjectMap(DEFAULT_REGION, bucket, object, url, stream, false);
                     logger.debug("objectMap: {}", map);
+                    assertEquals(url, map.get("url"));
+                    assertEquals("text/plain", map.get("mimetype"));
+                    assertEquals("txt", map.get("filetype"));
                     assertEquals(FILE_MAP.get(object.key()), map.get("contents"));
+                    assertEquals(FilenameUtils.getName(object.key()), map.get("filename"));
+                    assertEquals(dataStore.getManagementUrl(DEFAULT_REGION, bucket.name(), object.key()), map.get("management_url"));
+                    assertEquals(bucket.name(), map.get("bucket_name"));
                 } catch (final URISyntaxException e) {
+                    fail(e.getMessage());
+                }
+            });
+        });
+    }
+
+    @Test
+    public void test_getObjectContents() {
+        final AmazonS3Client client = getClient();
+        client.getBuckets(bucket -> {
+            client.getObjects(bucket.name(), object -> {
+                try {
+                    final String url = dataStore.getUrl(getEndpointS3(), DEFAULT_REGION, bucket.name(), object.key());
+                    final ResponseInputStream<GetObjectResponse> stream = client.getObject(bucket.name(), object.key());
+                    final GetObjectResponse response = stream.response();
+                    final String contents = dataStore.getObjectContents(stream, response.contentType(), object.key(), url, false);
+                    assertEquals(FILE_MAP.get(object.key()), contents);
+                } catch (final Exception e) {
                     fail(e.getMessage());
                 }
             });
