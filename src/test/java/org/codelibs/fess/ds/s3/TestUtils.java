@@ -32,7 +32,7 @@ import java.util.Map;
 import static cloud.localstack.TestUtils.*;
 import static org.junit.Assert.fail;
 
-class TestUtils {
+public class TestUtils {
 
     static final String[] BUCKETS = { "fess-0", "fess-1" };
     static final String[] PATHS = { "files/sample-0.txt", "files/sample-1.txt" };
@@ -92,7 +92,7 @@ class TestUtils {
         params.put(AmazonS3Client.ACCESS_KEY_ID, TEST_ACCESS_KEY);
         params.put(AmazonS3Client.SECRET_KEY, TEST_SECRET_KEY);
         params.put(AmazonS3Client.REGION, DEFAULT_REGION);
-        params.put(AmazonS3Client.ENDPOINT, Localstack.getEndpointS3());
+        params.put(AmazonS3Client.ENDPOINT, Localstack.INSTANCE.getEndpointS3());
         return params;
     }
 

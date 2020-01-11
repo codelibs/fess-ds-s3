@@ -15,12 +15,16 @@
  */
 package org.codelibs.fess.ds.s3;
 
-import cloud.localstack.LocalstackTestRunner;
-import org.apache.commons.io.IOUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import static org.codelibs.fess.ds.s3.TestUtils.BUCKETS;
+import static org.codelibs.fess.ds.s3.TestUtils.FILE_MAP;
+import static org.codelibs.fess.ds.s3.TestUtils.PATHS;
+import static org.codelibs.fess.ds.s3.TestUtils.getClient;
+import static org.codelibs.fess.ds.s3.TestUtils.initializeBuckets;
+import static org.codelibs.fess.ds.s3.TestUtils.resetBuckets;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,11 +32,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.codelibs.fess.ds.s3.TestUtils.*;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.*;
+import org.apache.commons.io.IOUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import cloud.localstack.LocalstackTestRunner;
+import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 
 @RunWith(LocalstackTestRunner.class)
+@LocalstackDockerProperties(services = { "s3" })
 public class AmazonS3ClientTest {
 
     private static AmazonS3Client client;
