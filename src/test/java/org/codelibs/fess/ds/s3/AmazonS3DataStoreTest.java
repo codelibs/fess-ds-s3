@@ -46,7 +46,7 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 @RunWith(LocalstackTestRunner.class)
-@LocalstackDockerProperties(services = { "s3" })
+@LocalstackDockerProperties(services = { "s3" }, randomizePorts = true)
 public class AmazonS3DataStoreTest {
 
     private static AmazonS3DataStore dataStore;

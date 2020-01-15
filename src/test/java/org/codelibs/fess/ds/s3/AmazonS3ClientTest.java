@@ -42,7 +42,7 @@ import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 
 @RunWith(LocalstackTestRunner.class)
-@LocalstackDockerProperties(services = { "s3" })
+@LocalstackDockerProperties(services = { "s3" }, randomizePorts = true)
 public class AmazonS3ClientTest {
 
     private static AmazonS3Client client;
