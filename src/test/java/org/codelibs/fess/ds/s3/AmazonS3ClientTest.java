@@ -15,16 +15,10 @@
  */
 package org.codelibs.fess.ds.s3;
 
-import static org.codelibs.fess.ds.s3.TestUtils.BUCKETS;
-import static org.codelibs.fess.ds.s3.TestUtils.FILE_MAP;
-import static org.codelibs.fess.ds.s3.TestUtils.PATHS;
-import static org.codelibs.fess.ds.s3.TestUtils.getClient;
-import static org.codelibs.fess.ds.s3.TestUtils.initializeBuckets;
-import static org.codelibs.fess.ds.s3.TestUtils.resetBuckets;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import org.apache.commons.io.IOUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,40 +26,33 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import static org.codelibs.fess.ds.s3.LocalAmazonS3.*;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.junit.Assert.*;
 
-import cloud.localstack.LocalstackTestRunner;
-import cloud.localstack.docker.annotation.LocalstackDockerProperties;
-
-@RunWith(LocalstackTestRunner.class)
-@LocalstackDockerProperties(services = { "s3" }, randomizePorts = true)
 public class AmazonS3ClientTest {
 
+    private static LocalAmazonS3 local;
     private static AmazonS3Client client;
 
     @BeforeClass
-    public static void setUp() {
-        initializeBuckets();
-        client = getClient();
+    public static void setUp() throws Exception {
+        local = getInstance();
+        local.initializeBuckets();
+        client = local.getAmazonS3Client();
     }
 
     @AfterClass
-    public static void tearDown() {
-        resetBuckets();
+    public static void tearDown() throws Exception {
+        local.resetBuckets();
     }
 
-    /*
     @Test
     public void test_getBuckets() {
         final List<String> buckets = new ArrayList<>();
         client.getBuckets(bucket -> buckets.add(bucket.name()));
         assertThat(buckets, hasItems(BUCKETS));
     }
-    */
 
     @Test
     public void test_getObjects() {
@@ -76,6 +63,7 @@ public class AmazonS3ClientTest {
         }
     }
 
+    /*
     @Test
     public void test_getObjectsMaxKeys() {
         for (final String bucketName : BUCKETS) {
@@ -84,6 +72,7 @@ public class AmazonS3ClientTest {
             assertThat(objects, hasItems(PATHS));
         }
     }
+    */
 
     @Test
     public void test_getObject() {

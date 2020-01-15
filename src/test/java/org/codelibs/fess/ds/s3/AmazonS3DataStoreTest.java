@@ -15,19 +15,6 @@
  */
 package org.codelibs.fess.ds.s3;
 
-import static cloud.localstack.TestUtils.DEFAULT_REGION;
-import static org.codelibs.fess.ds.s3.TestUtils.FILE_MAP;
-import static org.codelibs.fess.ds.s3.TestUtils.getClient;
-import static org.codelibs.fess.ds.s3.TestUtils.getParams;
-import static org.codelibs.fess.ds.s3.TestUtils.resetBuckets;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.tika.io.FilenameUtils;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
@@ -36,25 +23,27 @@ import org.codelibs.fess.util.ComponentUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.lastaflute.di.core.factory.SingletonLaContainerFactory;
-
-import cloud.localstack.Localstack;
-import cloud.localstack.LocalstackTestRunner;
-import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
-@RunWith(LocalstackTestRunner.class)
-@LocalstackDockerProperties(services = { "s3" }, randomizePorts = true)
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.codelibs.fess.ds.s3.LocalAmazonS3.*;
+import static org.junit.Assert.*;
+
 public class AmazonS3DataStoreTest {
 
+    private static LocalAmazonS3 local;
     private static AmazonS3DataStore dataStore;
 
     @BeforeClass
-    public static void setUp() {
+    public static void setUp() throws Exception {
+        local = getInstance();
+        local.initializeBuckets();
         initializeContainer();
-        TestUtils.initializeBuckets();
         dataStore = new AmazonS3DataStore();
     }
 
@@ -68,27 +57,26 @@ public class AmazonS3DataStoreTest {
     }
 
     @AfterClass
-    public static void tearDown() {
-        resetBuckets();
+    public static void tearDown() throws Exception {
+        local.resetBuckets();
         ComponentUtil.setFessConfig(null);
     }
 
-    /*
     @Test
     public void test_getObjectMap() {
-        final AmazonS3Client client = getClient();
+        final AmazonS3Client client = local.getAmazonS3Client();
         client.getBuckets(bucket -> {
             client.getObjects(bucket.name(), object -> {
                 try {
-                    final String url = dataStore.getUrl(Localstack.INSTANCE.getEndpointS3(), DEFAULT_REGION, bucket.name(), object.key());
+                    final String url = dataStore.getUrl(local.getEndpoint(), TEST_REGION, bucket.name(), object.key());
                     final ResponseInputStream<GetObjectResponse> stream = client.getObject(bucket.name(), object.key());
-                    final Map<String, Object> map = dataStore.getObjectMap(DEFAULT_REGION, bucket, object, url, stream, false);
+                    final Map<String, Object> map = dataStore.getObjectMap(TEST_REGION, bucket, object, url, stream, false);
                     assertEquals(url, map.get("url"));
                     assertEquals("text/plain", map.get("mimetype"));
                     assertEquals("txt", map.get("filetype"));
                     assertEquals(FILE_MAP.get(object.key()), map.get("contents"));
                     assertEquals(FilenameUtils.getName(object.key()), map.get("filename"));
-                    assertEquals(dataStore.getManagementUrl(DEFAULT_REGION, bucket.name(), object.key()), map.get("management_url"));
+                    assertEquals(dataStore.getManagementUrl(TEST_REGION, bucket.name(), object.key()), map.get("management_url"));
                     assertEquals(bucket.name(), map.get("bucket_name"));
                 } catch (final URISyntaxException e) {
                     fail(e.getMessage());
@@ -96,16 +84,14 @@ public class AmazonS3DataStoreTest {
             });
         });
     }
-    */
 
-    /*
     @Test
     public void test_getObjectContents() {
-        final AmazonS3Client client = getClient();
+        final AmazonS3Client client = local.getAmazonS3Client();
         client.getBuckets(bucket -> {
             client.getObjects(bucket.name(), object -> {
                 try {
-                    final String url = dataStore.getUrl(Localstack.INSTANCE.getEndpointS3(), DEFAULT_REGION, bucket.name(), object.key());
+                    final String url = dataStore.getUrl(local.getEndpoint(), TEST_REGION, bucket.name(), object.key());
                     final ResponseInputStream<GetObjectResponse> stream = client.getObject(bucket.name(), object.key());
                     final GetObjectResponse response = stream.response();
                     final String contents = dataStore.getObjectContents(stream, response.contentType(), object.key(), url, false);
@@ -116,7 +102,6 @@ public class AmazonS3DataStoreTest {
             });
         });
     }
-    */
 
     @Test
     public void test_getUrl() throws Exception {
@@ -132,11 +117,10 @@ public class AmazonS3DataStoreTest {
                 dataStore.getManagementUrl("ap-northeast-1", "fess", "dir/d i r/sample.txt"));
     }
 
-    /*
     @Test
     public void test_storeData() {
         final DataConfig dataConfig = new DataConfig();
-        final Map<String, String> paramMap = getParams();
+        final Map<String, String> paramMap = local.getParams();
         final Map<String, String> scriptMap = new HashMap<>();
         final Map<String, Object> defaultDataMap = new HashMap<>();
 
@@ -164,7 +148,6 @@ public class AmazonS3DataStoreTest {
             }
         }, paramMap, scriptMap, defaultDataMap);
     }
-    */
 
     private static abstract class TestCallback implements IndexUpdateCallback {
         private long documentSize = 0;
