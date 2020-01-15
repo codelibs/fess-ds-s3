@@ -58,12 +58,14 @@ public class AmazonS3ClientTest {
         resetBuckets();
     }
 
+    /*
     @Test
     public void test_getBuckets() {
         final List<String> buckets = new ArrayList<>();
         client.getBuckets(bucket -> buckets.add(bucket.name()));
         assertThat(buckets, hasItems(BUCKETS));
     }
+    */
 
     @Test
     public void test_getObjects() {

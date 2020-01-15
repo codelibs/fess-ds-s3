@@ -73,6 +73,7 @@ public class AmazonS3DataStoreTest {
         ComponentUtil.setFessConfig(null);
     }
 
+    /*
     @Test
     public void test_getObjectMap() {
         final AmazonS3Client client = getClient();
@@ -95,7 +96,9 @@ public class AmazonS3DataStoreTest {
             });
         });
     }
+    */
 
+    /*
     @Test
     public void test_getObjectContents() {
         final AmazonS3Client client = getClient();
@@ -113,6 +116,7 @@ public class AmazonS3DataStoreTest {
             });
         });
     }
+    */
 
     @Test
     public void test_getUrl() throws Exception {
@@ -128,6 +132,7 @@ public class AmazonS3DataStoreTest {
                 dataStore.getManagementUrl("ap-northeast-1", "fess", "dir/d i r/sample.txt"));
     }
 
+    /*
     @Test
     public void test_storeData() {
         final DataConfig dataConfig = new DataConfig();
@@ -159,6 +164,7 @@ public class AmazonS3DataStoreTest {
             }
         }, paramMap, scriptMap, defaultDataMap);
     }
+    */
 
     private static abstract class TestCallback implements IndexUpdateCallback {
         private long documentSize = 0;

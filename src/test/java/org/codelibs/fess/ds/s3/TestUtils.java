@@ -66,21 +66,23 @@ public class TestUtils {
 
     static void resetBuckets() {
         final AmazonS3 s3 = getClientS3();
-        s3.listBuckets().forEach(bucket -> {
-            ObjectListing objectListing = s3.listObjects(bucket.getName());
-            while (true) {
-                objectListing.getObjectSummaries().forEach(object -> {
-                    s3.deleteObject(bucket.getName(), object.getKey());
-                });
+        for (final String bucketName : BUCKETS) {
+            if (s3.doesBucketExistV2(bucketName)) {
+                ObjectListing objectListing = s3.listObjects(bucketName);
+                while (true) {
+                    objectListing.getObjectSummaries().forEach(object -> {
+                        s3.deleteObject(bucketName, object.getKey());
+                    });
 
-                if (objectListing.isTruncated()) {
-                    objectListing = s3.listNextBatchOfObjects(objectListing);
-                } else {
-                    break;
+                    if (objectListing.isTruncated()) {
+                        objectListing = s3.listNextBatchOfObjects(objectListing);
+                    } else {
+                        break;
+                    }
                 }
+                s3.deleteBucket(bucketName);
             }
-            s3.deleteBucket(bucket.getName());
-        });
+        };
     }
 
     static AmazonS3Client getClient() {
