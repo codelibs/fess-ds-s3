@@ -4,6 +4,10 @@
 <components>
 	<include path="convention.xml" />
 	<include path="lastaflute.xml" />
+	<component name="mimeTypeHelper"
+		class="org.codelibs.fess.crawler.helper.impl.MimeTypeHelperImpl"
+		instance="singleton">
+	</component>
 	<component name="fileTypeHelper" class="org.codelibs.fess.helper.FileTypeHelper">
 		<postConstruct name="add">
 			<arg>"text/plain"</arg>

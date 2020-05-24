@@ -15,6 +15,11 @@
  */
 package org.codelibs.fess.ds.s3;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -30,7 +35,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.output.DeferredFileOutputStream;
 import org.apache.tika.io.FilenameUtils;
+import org.codelibs.core.io.CopyUtil;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.core.stream.StreamUtil;
 import org.codelibs.fess.Constants;
@@ -40,6 +47,7 @@ import org.codelibs.fess.crawler.exception.MaxLengthExceededException;
 import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.crawler.extractor.Extractor;
 import org.codelibs.fess.crawler.filter.UrlFilter;
+import org.codelibs.fess.crawler.helper.MimeTypeHelper;
 import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
@@ -48,6 +56,7 @@ import org.codelibs.fess.util.ComponentUtil;
 import org.lastaflute.di.core.exception.ComponentNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -249,10 +258,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
         final Map<String, Object> map = new HashMap<>();
         final GetObjectResponse response = stream.response();
         map.put(OBJECT_URL, url);
-        map.put(OBJECT_MIMETYPE, response.contentType());
-        map.put(OBJECT_FILETYPE, ComponentUtil.getFileTypeHelper().get(response.contentType()));
-        map.put(OBJECT_CONTENTS, getObjectContents(stream, response.contentType(), object.key(), url, ignoreError));
-        map.put(OBJECT_FILENAME, FilenameUtils.getName(object.key()));
+        final String filename = FilenameUtils.getName(object.key());
+        map.put(OBJECT_FILENAME, filename);
         map.put(OBJECT_MANAGEMENT_URL, getManagementUrl(region, bucket.name(), object.key()));
 
         map.put(OBJECT_BUCKET_NAME, bucket.name());
@@ -273,7 +280,6 @@ public class AmazonS3DataStore extends AbstractDataStore {
         map.put(OBJECT_CONTENT_LANGUAGE, response.contentLanguage());
         map.put(OBJECT_CONTENT_LENGTH, response.contentLength());
         map.put(OBJECT_CONTENT_RANGE, response.contentRange());
-        map.put(OBJECT_CONTENT_TYPE, response.contentType());
         map.put(OBJECT_DELETE_MARKER, response.deleteMarker());
         map.put(OBJECT_EXPIRATION, response.expiration());
         map.put(OBJECT_EXPIRES, toDate(response.expires()));
@@ -292,10 +298,48 @@ public class AmazonS3DataStore extends AbstractDataStore {
         map.put(OBJECT_TAG_COUNT, response.tagCount());
         map.put(OBJECT_VERSION_ID, response.versionId());
         map.put(OBJECT_WEBSITE_REDIRECT_LOCATION, response.websiteRedirectLocation());
+        String contentType = response.contentType();
+        DeferredFileOutputStream dfos = null;
+        try (DeferredFileOutputStream out = new DeferredFileOutputStream(1000000, "fess-ds-s3-", ".out", null)) {
+            dfos = out;
+            CopyUtil.copy(stream, out);
+            out.flush();
+            contentType = getMimeType(filename, out);
+            try (InputStream is = getContentInputStream(out)) {
+                map.put(OBJECT_CONTENTS, getObjectContents(is, contentType, object.key(), url, ignoreError));
+            }
+        } catch (IOException e) {
+            logger.warn("Failed to process " + url, e);
+        } finally {
+            if (dfos != null && !dfos.isInMemory()) {
+                final File file = dfos.getFile();
+                if (!file.delete()) {
+                    logger.warn("Failed to delete {}.", file.getAbsolutePath());
+                }
+            }
+        }
+        map.put(OBJECT_FILETYPE, ComponentUtil.getFileTypeHelper().get(contentType));
+        map.put(OBJECT_MIMETYPE, contentType);
+        map.put(OBJECT_CONTENT_TYPE, contentType);
         return map;
     }
 
-    protected String getObjectContents(final ResponseInputStream<GetObjectResponse> in, final String contentType, final String key,
+    protected String getMimeType(final String filename, final DeferredFileOutputStream out) throws IOException {
+        final MimeTypeHelper mimeTypeHelper = ComponentUtil.getComponent(MimeTypeHelper.class);
+        try (InputStream is = getContentInputStream(out)) {
+            return mimeTypeHelper.getContentType(is, filename);
+        }
+    }
+
+    protected InputStream getContentInputStream(final DeferredFileOutputStream out) throws IOException {
+        if (out.isInMemory()) {
+            return new ByteArrayInputStream(out.getData());
+        } else {
+            return new FileInputStream(out.getFile());
+        }
+    }
+
+    protected String getObjectContents(final InputStream in, final String contentType, final String key,
             final String url, final boolean ignoreError) {
         try {
             Extractor extractor = ComponentUtil.getExtractorFactory().getExtractor(contentType);

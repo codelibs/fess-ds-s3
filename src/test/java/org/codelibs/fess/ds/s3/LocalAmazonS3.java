@@ -15,15 +15,7 @@
  */
 package org.codelibs.fess.ds.s3;
 
-import io.minio.MinioClient;
-import io.minio.Result;
-import io.minio.errors.MinioException;
-import io.minio.messages.Bucket;
-import io.minio.messages.Item;
-import org.apache.commons.io.IOUtils;
-import org.codelibs.core.io.ResourceUtil;
-import org.testcontainers.Testcontainers;
-import org.testcontainers.containers.GenericContainer;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URL;
@@ -33,7 +25,17 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.junit.Assert.fail;
+import org.apache.commons.io.IOUtils;
+import org.codelibs.core.io.ResourceUtil;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.GenericContainer;
+
+import io.minio.MinioClient;
+import io.minio.PutObjectOptions;
+import io.minio.Result;
+import io.minio.errors.MinioException;
+import io.minio.messages.Bucket;
+import io.minio.messages.Item;
 
 public class LocalAmazonS3 {
 
@@ -85,8 +87,7 @@ public class LocalAmazonS3 {
                 try {
                     final URL url = ResourceUtil.getResource(path);
                     final URLConnection conn = url.openConnection();
-                    client.putObject(bucketName, path, url.openStream(), conn.getContentLengthLong(), new HashMap<>(), null,
-                            conn.getContentType());
+                    client.putObject(bucketName, path, url.openStream(), new PutObjectOptions(conn.getContentLengthLong(), -1));
                 } catch (final Exception e) {
                     fail(e.getMessage());
                 }
