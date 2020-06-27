@@ -35,7 +35,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<aws.version>2.9.17</aws.version>
+		<aws.version>2.13.45</aws.version>
 
 		<fess.version>13.8.0</fess.version>
 
