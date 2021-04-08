@@ -30,8 +30,12 @@ import org.codelibs.core.io.ResourceUtil;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 
+import io.minio.ListObjectsArgs;
+import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
-import io.minio.PutObjectOptions;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveBucketArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.Result;
 import io.minio.errors.MinioException;
 import io.minio.messages.Bucket;
@@ -82,12 +86,14 @@ public class LocalAmazonS3 {
         resetBuckets();
         final MinioClient client = getMinioClient();
         for (final String bucketName : BUCKETS) {
-            client.makeBucket(bucketName);
+            client.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
             for (final String path : PATHS) {
                 try {
                     final URL url = ResourceUtil.getResource(path);
                     final URLConnection conn = url.openConnection();
-                    client.putObject(bucketName, path, url.openStream(), new PutObjectOptions(conn.getContentLengthLong(), -1));
+                    final PutObjectArgs args = PutObjectArgs.builder().bucket(bucketName).object(path)
+                            .stream(url.openStream(), conn.getContentLengthLong(), -1).contentType("application/octet-stream").build();
+                    client.putObject(args);
                 } catch (final Exception e) {
                     fail(e.getMessage());
                 }
@@ -98,15 +104,16 @@ public class LocalAmazonS3 {
     public void resetBuckets() throws Exception {
         final MinioClient client = getMinioClient();
         for (final Bucket bucket : client.listBuckets()) {
-            for (final Result<Item> object : client.listObjects(bucket.name())) {
-                client.removeObject(bucket.name(), object.get().objectName());
+            for (final Result<Item> object : client.listObjects(ListObjectsArgs.builder().bucket(bucket.name()).recursive(true).build())) {
+                final RemoveObjectArgs args = RemoveObjectArgs.builder().bucket(bucket.name()).object(object.get().objectName()).build();
+                client.removeObject(args);
             }
-            client.removeBucket(bucket.name());
+            client.removeBucket(RemoveBucketArgs.builder().bucket(bucket.name()).build());
         }
     }
 
     private MinioClient getMinioClient() throws MinioException {
-        return new MinioClient(getEndpoint(), TEST_ACCESS_KEY, TEST_SECRET_KEY);
+        return MinioClient.builder().endpoint(getEndpoint()).credentials(TEST_ACCESS_KEY, TEST_SECRET_KEY).build();
     }
 
     public String getEndpoint() {
