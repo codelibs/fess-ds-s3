@@ -38,7 +38,6 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
-
 public class AmazonS3Client implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(AmazonS3Client.class);
@@ -80,13 +79,13 @@ public class AmazonS3Client implements AutoCloseable {
         try {
             final ApacheHttpClient.Builder httpClientBuilder = ApacheHttpClient.builder();
 
-            if (!httpProxyHost.isEmpty() ) {
+            if (!httpProxyHost.isEmpty()) {
                 if (httpProxyPort.isEmpty()) {
                     throw new DataStoreException(PROXY_PORT_PARAM + " required.");
                 }
                 try {
-                    httpClientBuilder.proxyConfiguration(ProxyConfiguration.builder()
-                        .useSystemPropertyValues(true).endpoint(URI.create(httpProxyHost + ":" + Integer.parseInt(httpProxyPort))).build());
+                    httpClientBuilder.proxyConfiguration(ProxyConfiguration.builder().useSystemPropertyValues(true)
+                            .endpoint(URI.create(httpProxyHost + ":" + Integer.parseInt(httpProxyPort))).build());
                 } catch (final NumberFormatException e) {
                     throw new DataStoreException("parameter " + "'" + PROXY_PORT_PARAM + "' invalid.", e);
                 }

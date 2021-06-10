@@ -214,8 +214,9 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 logger.debug("objectMap: {}", objectMap);
             }
 
+            final String scriptType = getScriptType(paramMap);
             for (final Map.Entry<String, String> entry : scriptMap.entrySet()) {
-                final Object convertValue = convertValue(entry.getValue(), resultMap);
+                final Object convertValue = convertValue(scriptType, entry.getValue(), resultMap);
                 if (convertValue != null) {
                     dataMap.put(entry.getKey(), convertValue);
                 }
@@ -226,7 +227,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
 
             callback.store(paramMap, dataMap);
         } catch (final CrawlingAccessException e) {
-            logger.warn("Crawling Access Exception at : " + dataMap, e);
+            logger.warn("Crawling Access Exception at : {}", dataMap, e);
 
             Throwable target = e;
             if (target instanceof MultipleCrawlingAccessException) {
@@ -244,13 +245,16 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 errorName = target.getClass().getCanonicalName();
             }
 
-            final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
-            failureUrlService.store(dataConfig, errorName, url, target);
+            storeFailureUrl(dataConfig, errorName, url, target);
         } catch (final Throwable t) {
-            logger.warn("Crawling Access Exception at : " + dataMap, t);
-            final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
-            failureUrlService.store(dataConfig, t.getClass().getCanonicalName(), url, t);
+            logger.warn("Crawling Access Exception at : {}", dataMap, t);
+            storeFailureUrl(dataConfig, t.getClass().getCanonicalName(), url, t);
         }
+    }
+
+    protected void storeFailureUrl(final DataConfig dataConfig, final String errorName, final String url, final Throwable target) {
+        final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
+        failureUrlService.store(dataConfig, errorName, url, target);
     }
 
     protected Map<String, Object> getObjectMap(final String region, final Bucket bucket, final S3Object object, final String url,
@@ -339,8 +343,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
-    protected String getObjectContents(final InputStream in, final String contentType, final String key,
-            final String url, final boolean ignoreError) {
+    protected String getObjectContents(final InputStream in, final String contentType, final String key, final String url,
+            final boolean ignoreError) {
         try {
             Extractor extractor = ComponentUtil.getExtractorFactory().getExtractor(contentType);
             if (extractor == null) {
@@ -360,7 +364,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
-    protected String getUrl(final String endpoint, final String region, final String bucket, final String object) throws URISyntaxException {
+    protected String getUrl(final String endpoint, final String region, final String bucket, final String object)
+            throws URISyntaxException {
         if (Objects.nonNull(endpoint)) {
             final URI uri = URI.create(endpoint);
             return new URI(uri.getScheme(), bucket + "." + uri.getAuthority(), "/" + object, null, null).toASCIIString();

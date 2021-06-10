@@ -24,6 +24,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lastaflute.di.core.factory.SingletonLaContainerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
@@ -36,6 +39,8 @@ import static org.junit.Assert.*;
 
 public class AmazonS3DataStoreTest {
 
+    private static final Logger logger = LoggerFactory.getLogger(AmazonS3DataStoreTest.class);
+
     private static LocalAmazonS3 local;
     private static AmazonS3DataStore dataStore;
 
@@ -44,7 +49,12 @@ public class AmazonS3DataStoreTest {
         local = getInstance();
         local.initializeBuckets();
         initializeContainer();
-        dataStore = new AmazonS3DataStore();
+        dataStore = new AmazonS3DataStore() {
+            @Override
+            protected void storeFailureUrl(final DataConfig dataConfig, final String errorName, final String url, final Throwable target) {
+                logger.error("[{}] {} : {}", errorName, url, target);
+            }
+        };
     }
 
     private static void initializeContainer() {

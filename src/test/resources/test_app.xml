@@ -29,4 +29,11 @@
 			<arg>tikaExtractor</arg>
 		</postConstruct>
 	</component>
+	<component name="scriptEngineFactory"
+		class="org.codelibs.fess.script.ScriptEngineFactory">
+	</component>
+	<component name="groovyEngine"
+		class="org.codelibs.fess.script.groovy.GroovyEngine">
+		<postConstruct name="register"></postConstruct>
+	</component>
 </components>
