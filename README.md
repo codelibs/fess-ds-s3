@@ -1,4 +1,5 @@
-Amazon S3 Data Store for Fess [![Build Status](https://travis-ci.org/codelibs/fess-ds-s3.svg?branch=master)](https://travis-ci.org/codelibs/fess-ds-s3)
+Amazon S3 Data Store for Fess
+[![Java CI with Maven](https://github.com/codelibs/fess-ds-s3/actions/workflows/maven.yml/badge.svg)](https://github.com/codelibs/fess-ds-s3/actions/workflows/maven.yml)
 ==========================
 
 ## Overview
