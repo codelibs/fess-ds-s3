@@ -24,6 +24,7 @@ import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.exception.DataStoreException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -125,13 +126,11 @@ public class AmazonS3Client implements AutoCloseable {
         ListObjectsV2Response response = client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).build());
         while (true) {
             response.contents().forEach(consumer);
-            if (response.isTruncated()) {
-                final String next = response.nextContinuationToken();
-                response =
-                        client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).startAfter(next).build());
-            } else {
+            if (!response.isTruncated()) {
                 break;
             }
+            final String next = response.nextContinuationToken();
+            response = client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).startAfter(next).build());
         }
     }
 

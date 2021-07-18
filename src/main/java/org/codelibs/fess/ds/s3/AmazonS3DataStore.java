@@ -52,6 +52,7 @@ import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.exception.DataStoreCrawlingException;
+import org.codelibs.fess.exception.DataStoreException;
 import org.codelibs.fess.util.ComponentUtil;
 import org.lastaflute.di.core.exception.ComponentNotFoundException;
 import org.slf4j.Logger;
@@ -129,6 +130,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
 
     protected String extractorName = "tikaExtractor";
 
+    @Override
     protected String getName() {
         return this.getClass().getSimpleName();
     }
@@ -150,9 +152,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
             executorService.shutdown();
             executorService.awaitTermination(60, TimeUnit.SECONDS);
         } catch (final InterruptedException e) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Interrupted.", e);
-            }
+            throw new DataStoreException("Interrupted.", e);
         } finally {
             executorService.shutdownNow();
         }
@@ -312,7 +312,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
             try (InputStream is = getContentInputStream(out)) {
                 map.put(OBJECT_CONTENTS, getObjectContents(is, contentType, object.key(), url, ignoreError));
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             logger.warn("Failed to process " + url, e);
         } finally {
             if (dfos != null && !dfos.isInMemory()) {
@@ -338,9 +338,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected InputStream getContentInputStream(final DeferredFileOutputStream out) throws IOException {
         if (out.isInMemory()) {
             return new ByteArrayInputStream(out.getData());
-        } else {
-            return new FileInputStream(out.getFile());
         }
+        return new FileInputStream(out.getFile());
     }
 
     protected String getObjectContents(final InputStream in, final String contentType, final String key, final String url,
@@ -358,9 +357,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
             if (ignoreError) {
                 logger.warn("Failed to get contents: " + key, e);
                 return StringUtil.EMPTY;
-            } else {
-                throw new DataStoreCrawlingException(url, "Failed to get contents: " + key, e);
             }
+            throw new DataStoreCrawlingException(url, "Failed to get contents: " + key, e);
         }
     }
 
@@ -428,7 +426,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
 
         private boolean isIgnoreError(final Map<String, String> paramMap) {
-            return paramMap.getOrDefault(IGNORE_ERROR, Constants.TRUE).equalsIgnoreCase(Constants.TRUE);
+            return Constants.TRUE.equalsIgnoreCase(paramMap.getOrDefault(IGNORE_ERROR, Constants.TRUE));
         }
 
         private String[] getSupportedMimeTypes(final Map<String, String> paramMap) {
