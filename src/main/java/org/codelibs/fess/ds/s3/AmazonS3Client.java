@@ -129,8 +129,8 @@ public class AmazonS3Client implements AutoCloseable {
             if (!response.isTruncated()) {
                 break;
             }
-            final String next = response.nextContinuationToken();
-            response = client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).startAfter(next).build());
+            final S3Object lastObj = response.contents().get(response.contents().size() - 1);
+            response = client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).startAfter(lastObj.key()).build());
         }
     }
 
