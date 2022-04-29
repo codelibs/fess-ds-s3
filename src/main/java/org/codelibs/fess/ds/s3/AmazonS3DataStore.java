@@ -183,6 +183,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
         final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
         final StatsKeyObject statsKey = new StatsKeyObject(bucket.name() + "@" + object.key());
+        paramMap.put(Constants.CRAWLER_STATS_KEY, statsKey);
         String url = StringUtil.EMPTY;
         try {
             crawlerStatsHelper.begin(statsKey);
@@ -336,7 +337,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 map.put(OBJECT_CONTENTS, getObjectContents(is, contentType, object.key(), url, ignoreError));
             }
         } catch (final IOException e) {
-            logger.warn("Failed to process " + url, e);
+            logger.warn("Failed to process {}", url, e);
         } finally {
             if (dfos != null && !dfos.isInMemory()) {
                 final File file = dfos.getFile();
@@ -378,7 +379,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
             return extractor.getText(in, null).getContent();
         } catch (final Exception e) {
             if (ignoreError) {
-                logger.warn("Failed to get contents: " + key, e);
+                logger.warn("Failed to get contents: {}", key, e);
                 return StringUtil.EMPTY;
             }
             throw new DataStoreCrawlingException(url, "Failed to get contents: " + key, e);
