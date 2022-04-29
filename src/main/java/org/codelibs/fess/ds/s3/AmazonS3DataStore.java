@@ -50,9 +50,13 @@ import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.crawler.helper.MimeTypeHelper;
 import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
+import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.exception.DataStoreCrawlingException;
 import org.codelibs.fess.exception.DataStoreException;
+import org.codelibs.fess.helper.CrawlerStatsHelper;
+import org.codelibs.fess.helper.CrawlerStatsHelper.StatsAction;
+import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
 import org.codelibs.fess.util.ComponentUtil;
 import org.lastaflute.di.core.exception.ComponentNotFoundException;
 import org.slf4j.Logger;
@@ -136,13 +140,13 @@ public class AmazonS3DataStore extends AbstractDataStore {
     }
 
     @Override
-    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
+    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final DataStoreParams paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
         final Config config = new Config(paramMap);
         if (logger.isDebugEnabled()) {
             logger.debug("config: {}", config);
         }
-        final ExecutorService executorService = newFixedThreadPool(Integer.parseInt(paramMap.getOrDefault(NUMBER_OF_THREADS, "1")));
+        final ExecutorService executorService = newFixedThreadPool(Integer.parseInt(paramMap.getAsString(NUMBER_OF_THREADS, "1")));
 
         try (final AmazonS3Client client = createClient(paramMap)) {
             crawlBuckets(dataConfig, callback, paramMap, scriptMap, defaultDataMap, config, executorService, client);
@@ -158,7 +162,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
-    protected void crawlBuckets(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
+    protected void crawlBuckets(final DataConfig dataConfig, final IndexUpdateCallback callback, final DataStoreParams paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final Config config,
             final ExecutorService executorService, final AmazonS3Client client) {
         if (logger.isDebugEnabled()) {
@@ -173,12 +177,15 @@ public class AmazonS3DataStore extends AbstractDataStore {
         });
     }
 
-    protected void storeObject(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
+    protected void storeObject(final DataConfig dataConfig, final IndexUpdateCallback callback, final DataStoreParams paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final Config config, final AmazonS3Client client,
             final Bucket bucket, final S3Object object) {
+        final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
+        final StatsKeyObject statsKey = new StatsKeyObject(bucket.name() + "@" + object.key());
         String url = StringUtil.EMPTY;
         try {
+            crawlerStatsHelper.begin(statsKey);
             url = getUrl(client.getEndpoint(), client.getRegion().id(), bucket.name(), object.key());
 
             final UrlFilter urlFilter = config.urlFilter;
@@ -186,6 +193,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Not matched: {}", url);
                 }
+                crawlerStatsHelper.discard(statsKey);
                 return;
             }
 
@@ -196,6 +204,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} is not an indexing target.", response.contentType());
                 }
+                crawlerStatsHelper.discard(statsKey);
                 return;
             }
 
@@ -206,9 +215,11 @@ public class AmazonS3DataStore extends AbstractDataStore {
 
             logger.info("Crawling URL: {}", url);
 
-            final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap);
+            final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap.asMap());
             final Map<String, Object> objectMap = getObjectMap(client.getRegion().id(), bucket, object, url, stream, config.ignoreError);
             resultMap.put(OBJECT, objectMap);
+
+            crawlerStatsHelper.record(statsKey, StatsAction.PREPARED);
 
             if (logger.isDebugEnabled()) {
                 logger.debug("objectMap: {}", objectMap);
@@ -221,17 +232,25 @@ public class AmazonS3DataStore extends AbstractDataStore {
                     dataMap.put(entry.getKey(), convertValue);
                 }
             }
+
+            crawlerStatsHelper.record(statsKey, StatsAction.EVALUATED);
+
             if (logger.isDebugEnabled()) {
                 logger.debug("dataMap: {}", dataMap);
             }
 
+            if (dataMap.get("url") instanceof String statsUrl) {
+                statsKey.setUrl(statsUrl);
+            }
+
             callback.store(paramMap, dataMap);
+            crawlerStatsHelper.record(statsKey, StatsAction.FINISHED);
         } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : {}", dataMap, e);
 
             Throwable target = e;
-            if (target instanceof MultipleCrawlingAccessException) {
-                final Throwable[] causes = ((MultipleCrawlingAccessException) target).getCauses();
+            if (target instanceof final MultipleCrawlingAccessException ex) {
+                final Throwable[] causes = ex.getCauses();
                 if (causes.length > 0) {
                     target = causes[causes.length - 1];
                 }
@@ -246,9 +265,13 @@ public class AmazonS3DataStore extends AbstractDataStore {
             }
 
             storeFailureUrl(dataConfig, errorName, url, target);
+            crawlerStatsHelper.record(statsKey, StatsAction.ACCESS_EXCEPTION);
         } catch (final Throwable t) {
             logger.warn("Crawling Access Exception at : {}", dataMap, t);
             storeFailureUrl(dataConfig, t.getClass().getCanonicalName(), url, t);
+            crawlerStatsHelper.record(statsKey, StatsAction.EXCEPTION);
+        } finally {
+            crawlerStatsHelper.done(statsKey);
         }
     }
 
@@ -388,7 +411,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
-    protected AmazonS3Client createClient(final Map<String, String> paramMap) {
+    protected AmazonS3Client createClient(final DataStoreParams paramMap) {
         return new AmazonS3Client(paramMap);
     }
 
@@ -399,7 +422,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
         final String[] supportedMimeTypes;
         final UrlFilter urlFilter;
 
-        Config(final Map<String, String> paramMap) {
+        Config(final DataStoreParams paramMap) {
             maxKeys = getMaxKeys(paramMap);
             maxSize = getMaxSize(paramMap);
             ignoreError = isIgnoreError(paramMap);
@@ -407,8 +430,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
             urlFilter = getUrlFilter(paramMap);
         }
 
-        private int getMaxKeys(final Map<String, String> paramMap) {
-            final String value = paramMap.get(MAX_KEYS);
+        private int getMaxKeys(final DataStoreParams paramMap) {
+            final String value = paramMap.getAsString(MAX_KEYS);
             try {
                 return StringUtil.isNotBlank(value) ? Integer.parseInt(value) : DEFAULT_MAX_KEYS;
             } catch (final NumberFormatException e) {
@@ -416,8 +439,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
             }
         }
 
-        private long getMaxSize(final Map<String, String> paramMap) {
-            final String value = paramMap.get(MAX_SIZE);
+        private long getMaxSize(final DataStoreParams paramMap) {
+            final String value = paramMap.getAsString(MAX_SIZE);
             try {
                 return StringUtil.isNotBlank(value) ? Long.parseLong(value) : DEFAULT_MAX_SIZE;
             } catch (final NumberFormatException e) {
@@ -425,31 +448,31 @@ public class AmazonS3DataStore extends AbstractDataStore {
             }
         }
 
-        private boolean isIgnoreError(final Map<String, String> paramMap) {
-            return Constants.TRUE.equalsIgnoreCase(paramMap.getOrDefault(IGNORE_ERROR, Constants.TRUE));
+        private boolean isIgnoreError(final DataStoreParams paramMap) {
+            return Constants.TRUE.equalsIgnoreCase(paramMap.getAsString(IGNORE_ERROR, Constants.TRUE));
         }
 
-        private String[] getSupportedMimeTypes(final Map<String, String> paramMap) {
-            return StreamUtil.split(paramMap.getOrDefault(SUPPORTED_MIMETYPES, ".*"), ",")
+        private String[] getSupportedMimeTypes(final DataStoreParams paramMap) {
+            return StreamUtil.split(paramMap.getAsString(SUPPORTED_MIMETYPES, ".*"), ",")
                     .get(stream -> stream.map(String::trim).toArray(String[]::new));
         }
 
-        private UrlFilter getUrlFilter(final Map<String, String> paramMap) {
+        private UrlFilter getUrlFilter(final DataStoreParams paramMap) {
             final UrlFilter urlFilter;
             try {
                 urlFilter = ComponentUtil.getComponent(UrlFilter.class);
             } catch (final ComponentNotFoundException e) {
                 return null;
             }
-            final String include = paramMap.get(INCLUDE_PATTERN);
+            final String include = paramMap.getAsString(INCLUDE_PATTERN);
             if (StringUtil.isNotBlank(include)) {
                 urlFilter.addInclude(include);
             }
-            final String exclude = paramMap.get(EXCLUDE_PATTERN);
+            final String exclude = paramMap.getAsString(EXCLUDE_PATTERN);
             if (StringUtil.isNotBlank(exclude)) {
                 urlFilter.addExclude(exclude);
             }
-            urlFilter.init(paramMap.get(Constants.CRAWLING_INFO_ID));
+            urlFilter.init(paramMap.getAsString(Constants.CRAWLING_INFO_ID));
             if (logger.isDebugEnabled()) {
                 logger.debug("urlFilter: {}", urlFilter);
             }

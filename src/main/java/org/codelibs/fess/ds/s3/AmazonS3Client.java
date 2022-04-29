@@ -16,11 +16,11 @@
 package org.codelibs.fess.ds.s3;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.codelibs.core.lang.StringUtil;
+import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.exception.DataStoreException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,28 +54,28 @@ public class AmazonS3Client implements AutoCloseable {
     // other parameters
     protected static final String MAX_CACHED_CONTENT_SIZE = "max_cached_content_size";
 
-    protected final Map<String, String> params;
+    protected final DataStoreParams params;
 
     protected final S3Client client;
     protected final Region region;
     protected final String endpoint;
     protected int maxCachedContentSize = 1024 * 1024;
 
-    public AmazonS3Client(final Map<String, String> params) {
+    public AmazonS3Client(final DataStoreParams params) {
         this.params = params;
-        final String size = params.get(MAX_CACHED_CONTENT_SIZE);
+        final String size = params.getAsString(MAX_CACHED_CONTENT_SIZE);
         if (StringUtil.isNotBlank(size)) {
             maxCachedContentSize = Integer.parseInt(size);
         }
 
-        final String region = params.getOrDefault(REGION, StringUtil.EMPTY);
+        final String region = params.getAsString(REGION, StringUtil.EMPTY);
         if (region.isEmpty()) {
             throw new DataStoreException("Parameter '" + REGION + "' is required");
         }
         this.region = Region.of(region);
-        this.endpoint = params.get(ENDPOINT);
-        final String httpProxyHost = params.getOrDefault(PROXY_HOST_PARAM, StringUtil.EMPTY);
-        final String httpProxyPort = params.getOrDefault(PROXY_PORT_PARAM, StringUtil.EMPTY);
+        this.endpoint = params.getAsString(ENDPOINT);
+        final String httpProxyHost = params.getAsString(PROXY_HOST_PARAM, StringUtil.EMPTY);
+        final String httpProxyPort = params.getAsString(PROXY_PORT_PARAM, StringUtil.EMPTY);
         final AwsCredentialsProvider awsCredentialsProvider = new AwsBasicCredentialsProvider(params);
         try {
             final ApacheHttpClient.Builder httpClientBuilder = ApacheHttpClient.builder();
@@ -130,7 +130,8 @@ public class AmazonS3Client implements AutoCloseable {
                 break;
             }
             final S3Object lastObj = response.contents().get(response.contents().size() - 1);
-            response = client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).startAfter(lastObj.key()).build());
+            response = client
+                    .listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).startAfter(lastObj.key()).build());
         }
     }
 
@@ -149,9 +150,9 @@ public class AmazonS3Client implements AutoCloseable {
         final String accessKeyId;
         final String secretAccessKey;
 
-        AwsBasicCredentialsProvider(final Map<String, String> params) {
-            accessKeyId = params.getOrDefault(ACCESS_KEY_ID, StringUtil.EMPTY);
-            secretAccessKey = params.getOrDefault(SECRET_KEY, StringUtil.EMPTY);
+        AwsBasicCredentialsProvider(final DataStoreParams params) {
+            accessKeyId = params.getAsString(ACCESS_KEY_ID, StringUtil.EMPTY);
+            secretAccessKey = params.getAsString(SECRET_KEY, StringUtil.EMPTY);
             if (accessKeyId.isEmpty() || secretAccessKey.isEmpty()) {
                 throw new DataStoreException("Parameter '" + //
                         ACCESS_KEY_ID + "', '" + //

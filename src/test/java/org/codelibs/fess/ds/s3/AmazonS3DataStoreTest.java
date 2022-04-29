@@ -17,6 +17,7 @@ package org.codelibs.fess.ds.s3;
 
 import org.apache.tika.io.FilenameUtils;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
+import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.mylasta.direction.FessConfig;
 import org.codelibs.fess.util.ComponentUtil;
@@ -130,7 +131,7 @@ public class AmazonS3DataStoreTest {
     @Test
     public void test_storeData() {
         final DataConfig dataConfig = new DataConfig();
-        final Map<String, String> paramMap = local.getParams();
+        final DataStoreParams paramMap = local.getParams();
         final Map<String, String> scriptMap = new HashMap<>();
         final Map<String, Object> defaultDataMap = new HashMap<>();
 
@@ -146,7 +147,7 @@ public class AmazonS3DataStoreTest {
 
         dataStore.storeData(dataConfig, new TestCallback() {
             @Override
-            public void test(Map<String, String> paramMap, Map<String, Object> dataMap) {
+            public void test(DataStoreParams paramMap, Map<String, Object> dataMap) {
                 assertNotNull(dataMap.get(fessConfig.getIndexFieldUrl()));
                 assertNotNull(dataMap.get(fessConfig.getIndexFieldTitle()));
                 assertNotNull(dataMap.get(fessConfig.getIndexFieldContent()));
@@ -163,10 +164,10 @@ public class AmazonS3DataStoreTest {
         private long documentSize = 0;
         private long executeTime = 0;
 
-        abstract void test(Map<String, String> paramMap, Map<String, Object> dataMap);
+        abstract void test(DataStoreParams paramMap, Map<String, Object> dataMap);
 
         @Override
-        public void store(Map<String, String> paramMap, Map<String, Object> dataMap) {
+        public void store(DataStoreParams paramMap, Map<String, Object> dataMap) {
             final long startTime = System.currentTimeMillis();
             test(paramMap, dataMap);
             executeTime += System.currentTimeMillis() - startTime;

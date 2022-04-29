@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.codelibs.core.io.ResourceUtil;
+import org.codelibs.fess.entity.DataStoreParams;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 
@@ -126,8 +127,8 @@ public class LocalAmazonS3 {
         return new AmazonS3Client(getParams());
     }
 
-    public Map<String, String> getParams() {
-        final Map<String, String> params = new HashMap<>();
+    public DataStoreParams getParams() {
+        final DataStoreParams params = new DataStoreParams();
         params.put(AmazonS3Client.ACCESS_KEY_ID, TEST_ACCESS_KEY);
         params.put(AmazonS3Client.SECRET_KEY, TEST_SECRET_KEY);
         params.put(AmazonS3Client.REGION, TEST_REGION);

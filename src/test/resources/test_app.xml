@@ -36,4 +36,7 @@
 		class="org.codelibs.fess.script.groovy.GroovyEngine">
 		<postConstruct name="register"></postConstruct>
 	</component>
+	<component name="crawlerStatsHelper"
+		class="org.codelibs.fess.helper.CrawlerStatsHelper">
+	</component>
 </components>
