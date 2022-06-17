@@ -8,11 +8,11 @@ Amazon S3 Data Store is an extension for Fess Data Store Crawling.
 
 ## Download
 
-See [Maven Repository](http://central.maven.org/maven2/org/codelibs/fess/fess-ds-s3/).
+See [Maven Repository](https://repo1.maven.org/maven2/org/codelibs/fess/fess-ds-s3/).
 
 ## Installation 
 
-See [Plugin](https://fess.codelibs.org/13.3/admin/plugin-guide.html) of Administration guide.
+See [Plugin](https://fess.codelibs.org/14.2/admin/plugin-guide.html) of Administration guide.
 
 ## Getting Started
 
@@ -29,6 +29,7 @@ secret_key=...
 | *region* | The region of the S3 buckets (eg: `ap-northeast-1`) |
 | *access_key_id* | AWS Access Key ID |
 | *secret_key* | AWS Secret Key |
+| *buckets* | (Optional) Bucket names (comma separated values) |
 
 ### Scripts
 

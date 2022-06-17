@@ -16,8 +16,11 @@
 package org.codelibs.fess.ds.s3;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.entity.DataStoreParams;
@@ -76,6 +79,7 @@ public class AmazonS3Client implements AutoCloseable {
         this.endpoint = params.getAsString(ENDPOINT);
         final String httpProxyHost = params.getAsString(PROXY_HOST_PARAM, StringUtil.EMPTY);
         final String httpProxyPort = params.getAsString(PROXY_PORT_PARAM, StringUtil.EMPTY);
+        logger.info("region:{}, endpoint:{}, proxy:{}:{}", region, endpoint, httpProxyHost, httpProxyPort);
         final AwsCredentialsProvider awsCredentialsProvider = new AwsBasicCredentialsProvider(params);
         try {
             final ApacheHttpClient.Builder httpClientBuilder = ApacheHttpClient.builder();
@@ -112,6 +116,11 @@ public class AmazonS3Client implements AutoCloseable {
 
     public String getEndpoint() {
         return endpoint;
+    }
+
+    public void getBuckets(final String[] bucketNames, final Consumer<Bucket> consumer) {
+        final Set<String> names = Arrays.stream(bucketNames).collect(Collectors.toSet());
+        client.listBuckets().buckets().stream().filter(bucket -> names.contains(bucket.name())).forEach(consumer);
     }
 
     public void getBuckets(final Consumer<Bucket> consumer) {

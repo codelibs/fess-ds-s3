@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.output.DeferredFileOutputStream;
@@ -83,6 +84,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected static final String INCLUDE_PATTERN = "include_pattern";
     protected static final String EXCLUDE_PATTERN = "exclude_pattern";
     protected static final String NUMBER_OF_THREADS = "number_of_threads";
+    protected static final String BUCKETS = "buckets";
 
     // scripts
     protected static final String OBJECT = "object";
@@ -165,16 +167,26 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected void crawlBuckets(final DataConfig dataConfig, final IndexUpdateCallback callback, final DataStoreParams paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final Config config,
             final ExecutorService executorService, final AmazonS3Client client) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Crawling buckets.");
-        }
-        client.getBuckets(bucket -> {
+        final Consumer<Bucket> processOnBucket = bucket -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("Crawling bucket objects: {}", bucket.name());
             }
             client.getObjects(bucket.name(), config.maxKeys, object -> executorService
                     .execute(() -> storeObject(dataConfig, callback, paramMap, scriptMap, defaultDataMap, config, client, bucket, object)));
-        });
+        };
+        final String bucketNames = paramMap.getAsString(BUCKETS);
+        if (StringUtil.isNotBlank(bucketNames)) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Crawling {} buckets.", bucketNames);
+            }
+            client.getBuckets(StreamUtil.split(bucketNames, ",").get(stream -> stream.map(s -> s.trim()).toArray(n -> new String[n])),
+                    processOnBucket);
+        } else {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Crawling all buckets.");
+            }
+            client.getBuckets(processOnBucket);
+        }
     }
 
     protected void storeObject(final DataConfig dataConfig, final IndexUpdateCallback callback, final DataStoreParams paramMap,
@@ -240,7 +252,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 logger.debug("dataMap: {}", dataMap);
             }
 
-            if (dataMap.get("url") instanceof String statsUrl) {
+            if (dataMap.get("url") instanceof final String statsUrl) {
                 statsKey.setUrl(statsUrl);
             }
 
