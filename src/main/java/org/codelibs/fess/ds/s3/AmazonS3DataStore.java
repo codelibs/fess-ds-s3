@@ -404,7 +404,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
             final URI uri = URI.create(endpoint);
             return new URI(uri.getScheme(), bucket + "." + uri.getAuthority(), "/" + object, null, null).toASCIIString();
         }
-        return new URI("https", bucket + ".s3-" + region + ".amazonaws.com", "/" + object, null).toASCIIString();
+        // Virtual Hosted-Stype: https://my-bucket.s3.us-west-2.amazonaws.com/puppy.png
+        return new URI("https", bucket + ".s3." + region + ".amazonaws.com", "/" + object, null).toASCIIString();
     }
 
     protected String getManagementUrl(final String region, final String bucket, final String object) throws URISyntaxException {
