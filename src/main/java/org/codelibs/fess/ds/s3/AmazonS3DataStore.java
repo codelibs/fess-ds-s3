@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.io.output.DeferredFileOutputStream;
 import org.apache.tika.io.FilenameUtils;
+import org.codelibs.core.exception.InterruptedRuntimeException;
 import org.codelibs.core.io.CopyUtil;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.core.stream.StreamUtil;
@@ -158,8 +159,8 @@ public class AmazonS3DataStore extends AbstractDataStore {
             executorService.shutdown();
             executorService.awaitTermination(60, TimeUnit.SECONDS);
         } catch (final InterruptedException e) {
-            throw new DataStoreException("Interrupted.", e);
-        } finally {
+            throw new InterruptedRuntimeException(e);
+            } finally {
             executorService.shutdownNow();
         }
     }
