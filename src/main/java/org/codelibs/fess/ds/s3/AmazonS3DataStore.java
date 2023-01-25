@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 CodeLibs Project and the Others.
+ * Copyright 2012-2023 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,7 +160,7 @@ public class AmazonS3DataStore extends AbstractDataStore {
             executorService.awaitTermination(60, TimeUnit.SECONDS);
         } catch (final InterruptedException e) {
             throw new InterruptedRuntimeException(e);
-            } finally {
+        } finally {
             executorService.shutdownNow();
         }
     }
