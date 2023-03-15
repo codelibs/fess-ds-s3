@@ -382,20 +382,18 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected String getObjectContents(final InputStream in, final String contentType, final String key, final String url,
             final boolean ignoreError) {
         try {
-            Extractor extractor = ComponentUtil.getExtractorFactory().getExtractor(contentType);
-            if (extractor == null) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("use a default extractor as {} by {}", extractorName, contentType);
-                }
-                extractor = ComponentUtil.getComponent(extractorName);
-            }
-            return extractor.getText(in, null).getContent();
+            return ComponentUtil.getExtractorFactory().builder(in, null).mimeType(contentType).extractorName(extractorName).extract()
+                    .getContent();
         } catch (final Exception e) {
-            if (ignoreError) {
-                logger.warn("Failed to get contents: {}", key, e);
-                return StringUtil.EMPTY;
+            if (!ignoreError && !ComponentUtil.getFessConfig().isCrawlerIgnoreContentException()) {
+                throw new DataStoreCrawlingException(url, "Failed to get contents: " + key, e);
             }
-            throw new DataStoreCrawlingException(url, "Failed to get contents: " + key, e);
+            if (logger.isDebugEnabled()) {
+                logger.warn("Failed to get contents: {}", key, e);
+            } else {
+                logger.warn("Failed to get contents: {}. {}", key, e.getMessage());
+            }
+            return StringUtil.EMPTY;
         }
     }
 

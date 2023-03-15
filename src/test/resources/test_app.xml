@@ -39,4 +39,7 @@
 	<component name="crawlerStatsHelper"
 		class="org.codelibs.fess.helper.CrawlerStatsHelper">
 	</component>
+	<component name="contentLengthHelper"
+		class="org.codelibs.fess.crawler.helper.ContentLengthHelper">
+	</component>
 </components>
