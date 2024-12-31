@@ -15,6 +15,19 @@
  */
 package org.codelibs.fess.ds.s3;
 
+import static org.codelibs.fess.ds.s3.LocalAmazonS3.FILE_MAP;
+import static org.codelibs.fess.ds.s3.LocalAmazonS3.TEST_REGION;
+import static org.codelibs.fess.ds.s3.LocalAmazonS3.getInstance;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tika.io.FilenameUtils;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.entity.DataStoreParams;
@@ -25,22 +38,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lastaflute.di.core.factory.SingletonLaContainerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.codelibs.fess.ds.s3.LocalAmazonS3.*;
-import static org.junit.Assert.*;
-
 public class AmazonS3DataStoreTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(AmazonS3DataStoreTest.class);
+    private static final Logger logger = LogManager.getLogger(AmazonS3DataStoreTest.class);
 
     private static LocalAmazonS3 local;
     private static AmazonS3DataStore dataStore;

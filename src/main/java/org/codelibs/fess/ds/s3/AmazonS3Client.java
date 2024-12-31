@@ -22,11 +22,11 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.exception.DataStoreException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -44,7 +44,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 public class AmazonS3Client implements AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(AmazonS3Client.class);
+    private static final Logger logger = LogManager.getLogger(AmazonS3Client.class);
 
     // parameters for authentication
     protected static final String REGION = "region";
