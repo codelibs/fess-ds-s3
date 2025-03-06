@@ -101,7 +101,8 @@ public class AmazonS3Client implements AutoCloseable {
                     .httpClient(httpClientBuilder.build()) //
                     .credentialsProvider(awsCredentialsProvider);
             if (Objects.nonNull(this.endpoint)) {
-                builder.endpointOverride(URI.create(this.endpoint));
+                builder.endpointOverride(URI.create(this.endpoint))//
+                        .forcePathStyle(true);
             }
             client = builder.build();
         } catch (final Exception e) {
