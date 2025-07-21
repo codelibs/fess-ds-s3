@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 CodeLibs Project and the Others.
+ * Copyright 2012-2025 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.output.DeferredFileOutputStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tika.io.FilenameUtils;
 import org.codelibs.core.exception.InterruptedRuntimeException;
 import org.codelibs.core.io.CopyUtil;
@@ -47,22 +49,18 @@ import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.crawler.exception.MaxLengthExceededException;
 import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
-import org.codelibs.fess.crawler.extractor.Extractor;
 import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.crawler.helper.MimeTypeHelper;
 import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.entity.DataStoreParams;
-import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.exception.DataStoreCrawlingException;
-import org.codelibs.fess.exception.DataStoreException;
 import org.codelibs.fess.helper.CrawlerStatsHelper;
 import org.codelibs.fess.helper.CrawlerStatsHelper.StatsAction;
 import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
+import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.lastaflute.di.core.exception.ComponentNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.Bucket;
@@ -72,7 +70,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 public class AmazonS3DataStore extends AbstractDataStore {
 
-    private static final Logger logger = LoggerFactory.getLogger(AmazonS3DataStore.class);
+    private static final Logger logger = LogManager.getLogger(AmazonS3DataStore.class);
 
     protected static final int DEFAULT_MAX_KEYS = 1000;
     protected static final long DEFAULT_MAX_SIZE = 10000000L; // 10m

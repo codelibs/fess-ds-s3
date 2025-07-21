@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 CodeLibs Project and the Others.
+ * Copyright 2012-2025 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,32 +15,36 @@
  */
 package org.codelibs.fess.ds.s3;
 
-import org.apache.tika.io.FilenameUtils;
-import org.codelibs.fess.ds.callback.IndexUpdateCallback;
-import org.codelibs.fess.entity.DataStoreParams;
-import org.codelibs.fess.es.config.exentity.DataConfig;
-import org.codelibs.fess.mylasta.direction.FessConfig;
-import org.codelibs.fess.util.ComponentUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.lastaflute.di.core.factory.SingletonLaContainerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import static org.codelibs.fess.ds.s3.LocalAmazonS3.FILE_MAP;
+import static org.codelibs.fess.ds.s3.LocalAmazonS3.TEST_REGION;
+import static org.codelibs.fess.ds.s3.LocalAmazonS3.getInstance;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.codelibs.fess.ds.s3.LocalAmazonS3.*;
-import static org.junit.Assert.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tika.io.FilenameUtils;
+import org.codelibs.fess.ds.callback.IndexUpdateCallback;
+import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.mylasta.direction.FessConfig;
+import org.codelibs.fess.opensearch.config.exentity.DataConfig;
+import org.codelibs.fess.util.ComponentUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.lastaflute.di.core.factory.SingletonLaContainerFactory;
+
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 public class AmazonS3DataStoreTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(AmazonS3DataStoreTest.class);
+    private static final Logger logger = LogManager.getLogger(AmazonS3DataStoreTest.class);
 
     private static LocalAmazonS3 local;
     private static AmazonS3DataStore dataStore;

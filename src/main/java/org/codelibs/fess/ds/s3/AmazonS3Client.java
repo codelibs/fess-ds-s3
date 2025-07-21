@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 CodeLibs Project and the Others.
+ * Copyright 2012-2025 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.exception.DataStoreException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -44,7 +44,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 public class AmazonS3Client implements AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(AmazonS3Client.class);
+    private static final Logger logger = LogManager.getLogger(AmazonS3Client.class);
 
     // parameters for authentication
     protected static final String REGION = "region";
@@ -101,7 +101,8 @@ public class AmazonS3Client implements AutoCloseable {
                     .httpClient(httpClientBuilder.build()) //
                     .credentialsProvider(awsCredentialsProvider);
             if (Objects.nonNull(this.endpoint)) {
-                builder.endpointOverride(URI.create(this.endpoint));
+                builder.endpointOverride(URI.create(this.endpoint))//
+                        .forcePathStyle(true);
             }
             client = builder.build();
         } catch (final Exception e) {

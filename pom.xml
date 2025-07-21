@@ -4,20 +4,21 @@
 	<artifactId>fess-ds-s3</artifactId>
 	<packaging>jar</packaging>
 	<name>Amazon S3 Data Store</name>
-	<version>15.0.0-SNAPSHOT</version>
+	<version>15.0.1-SNAPSHOT</version>
 	<scm>
 		<connection>scm:git:git@github.com:codelibs/fess-ds-s3.git</connection>
 		<developerConnection>scm:git:git@github.com:codelibs/fess-ds-s3.git</developerConnection>
 		<url>https://github.com/codelibs/fess-ds-s3</url>
-	</scm>
+	  <tag>HEAD</tag>
+  </scm>
 	<parent>
 		<groupId>org.codelibs.fess</groupId>
 		<artifactId>fess-parent</artifactId>
-		<version>15.0.0-SNAPSHOT</version>
+		<version>15.0.0</version>
 		<relativePath />
 	</parent>
 	<properties>
-		<aws.version>2.17.212</aws.version>
+		<aws.version>2.30.33</aws.version>
 	</properties>
 	<build>
 		<plugins>
@@ -63,8 +64,8 @@
 	</build>
 	<repositories>
 		<repository>
-			<id>snapshots.oss.sonatype.org</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<id>snapshots.central.sonatype.com</id>
+			<url>https://central.sonatype.com/repository/maven-snapshots</url>
 			<releases>
 				<enabled>false</enabled>
 			</releases>
@@ -110,7 +111,7 @@
 		<dependency>
 			<groupId>org.codelibs.fess</groupId>
 			<artifactId>fess-script-groovy</artifactId>
-			<version>${fess.version}</version>
+			<version>14.19.0</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -161,7 +162,7 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
-			<version>1.15.2</version>
+			<version>1.20.6</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
