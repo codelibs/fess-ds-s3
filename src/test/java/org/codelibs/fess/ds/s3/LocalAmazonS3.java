@@ -91,8 +91,12 @@ public class LocalAmazonS3 {
                 try {
                     final URL url = ResourceUtil.getResource(path);
                     final URLConnection conn = url.openConnection();
-                    final PutObjectArgs args = PutObjectArgs.builder().bucket(bucketName).object(path)
-                            .stream(url.openStream(), conn.getContentLengthLong(), -1).contentType("application/octet-stream").build();
+                    final PutObjectArgs args = PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(path)
+                            .stream(url.openStream(), conn.getContentLengthLong(), -1)
+                            .contentType("application/octet-stream")
+                            .build();
                     client.putObject(args);
                 } catch (final Exception e) {
                     fail(e.getMessage());

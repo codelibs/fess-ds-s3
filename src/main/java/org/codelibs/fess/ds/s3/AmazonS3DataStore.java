@@ -380,7 +380,11 @@ public class AmazonS3DataStore extends AbstractDataStore {
     protected String getObjectContents(final InputStream in, final String contentType, final String key, final String url,
             final boolean ignoreError) {
         try {
-            return ComponentUtil.getExtractorFactory().builder(in, null).mimeType(contentType).extractorName(extractorName).extract()
+            return ComponentUtil.getExtractorFactory()
+                    .builder(in, null)
+                    .mimeType(contentType)
+                    .extractorName(extractorName)
+                    .extract()
                     .getContent();
         } catch (final Exception e) {
             if (!ignoreError && !ComponentUtil.getFessConfig().isCrawlerIgnoreContentException()) {

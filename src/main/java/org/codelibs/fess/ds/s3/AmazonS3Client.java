@@ -89,8 +89,10 @@ public class AmazonS3Client implements AutoCloseable {
                     throw new DataStoreException(PROXY_PORT_PARAM + " required.");
                 }
                 try {
-                    httpClientBuilder.proxyConfiguration(ProxyConfiguration.builder().useSystemPropertyValues(true)
-                            .endpoint(URI.create(httpProxyHost + ":" + Integer.parseInt(httpProxyPort))).build());
+                    httpClientBuilder.proxyConfiguration(ProxyConfiguration.builder()
+                            .useSystemPropertyValues(true)
+                            .endpoint(URI.create(httpProxyHost + ":" + Integer.parseInt(httpProxyPort)))
+                            .build());
                 } catch (final NumberFormatException e) {
                     throw new DataStoreException("parameter " + "'" + PROXY_PORT_PARAM + "' invalid.", e);
                 }
