@@ -206,6 +206,13 @@ public class AmazonS3DataStoreTest {
 
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
         scriptMap.put(fessConfig.getIndexFieldUrl(), "object.url");
+        scriptMap.put(fessConfig.getIndexFieldTitle(), "object.key");
+        scriptMap.put(fessConfig.getIndexFieldContent(), "object.contents");
+        scriptMap.put(fessConfig.getIndexFieldMimetype(), "object.mimetype");
+        scriptMap.put(fessConfig.getIndexFieldFiletype(), "object.filetype");
+        scriptMap.put(fessConfig.getIndexFieldFilename(), "object.filename");
+        scriptMap.put(fessConfig.getIndexFieldContentLength(), "object.size");
+        scriptMap.put(fessConfig.getIndexFieldLastModified(), "object.last_modified");
 
         final AtomicInteger count = new AtomicInteger(0);
         dataStore.storeData(dataConfig, new TestCallback() {
@@ -255,6 +262,11 @@ public class AmazonS3DataStoreTest {
         scriptMap.put(fessConfig.getIndexFieldUrl(), "object.url");
         scriptMap.put(fessConfig.getIndexFieldTitle(), "object.key");
         scriptMap.put(fessConfig.getIndexFieldContent(), "object.contents");
+        scriptMap.put(fessConfig.getIndexFieldMimetype(), "object.mimetype");
+        scriptMap.put(fessConfig.getIndexFieldFiletype(), "object.filetype");
+        scriptMap.put(fessConfig.getIndexFieldFilename(), "object.filename");
+        scriptMap.put(fessConfig.getIndexFieldContentLength(), "object.size");
+        scriptMap.put(fessConfig.getIndexFieldLastModified(), "object.last_modified");
 
         final AtomicInteger count = new AtomicInteger(0);
         dataStore.storeData(dataConfig, new TestCallback() {
@@ -283,6 +295,11 @@ public class AmazonS3DataStoreTest {
         scriptMap.put(fessConfig.getIndexFieldUrl(), "object.url");
         scriptMap.put(fessConfig.getIndexFieldTitle(), "object.key");
         scriptMap.put(fessConfig.getIndexFieldContent(), "object.contents");
+        scriptMap.put(fessConfig.getIndexFieldMimetype(), "object.mimetype");
+        scriptMap.put(fessConfig.getIndexFieldFiletype(), "object.filetype");
+        scriptMap.put(fessConfig.getIndexFieldFilename(), "object.filename");
+        scriptMap.put(fessConfig.getIndexFieldContentLength(), "object.size");
+        scriptMap.put(fessConfig.getIndexFieldLastModified(), "object.last_modified");
 
         final AtomicInteger count = new AtomicInteger(0);
         dataStore.storeData(dataConfig, new TestCallback() {
@@ -308,6 +325,11 @@ public class AmazonS3DataStoreTest {
         scriptMap.put(fessConfig.getIndexFieldUrl(), "object.url");
         scriptMap.put(fessConfig.getIndexFieldTitle(), "object.key");
         scriptMap.put(fessConfig.getIndexFieldContent(), "object.contents");
+        scriptMap.put(fessConfig.getIndexFieldMimetype(), "object.mimetype");
+        scriptMap.put(fessConfig.getIndexFieldFiletype(), "object.filetype");
+        scriptMap.put(fessConfig.getIndexFieldFilename(), "object.filename");
+        scriptMap.put(fessConfig.getIndexFieldContentLength(), "object.size");
+        scriptMap.put(fessConfig.getIndexFieldLastModified(), "object.last_modified");
 
         final AtomicInteger count = new AtomicInteger(0);
         dataStore.storeData(dataConfig, new TestCallback() {
@@ -333,6 +355,11 @@ public class AmazonS3DataStoreTest {
         scriptMap.put(fessConfig.getIndexFieldUrl(), "object.url");
         scriptMap.put(fessConfig.getIndexFieldTitle(), "object.key");
         scriptMap.put(fessConfig.getIndexFieldContent(), "object.contents");
+        scriptMap.put(fessConfig.getIndexFieldMimetype(), "object.mimetype");
+        scriptMap.put(fessConfig.getIndexFieldFiletype(), "object.filetype");
+        scriptMap.put(fessConfig.getIndexFieldFilename(), "object.filename");
+        scriptMap.put(fessConfig.getIndexFieldContentLength(), "object.size");
+        scriptMap.put(fessConfig.getIndexFieldLastModified(), "object.last_modified");
 
         final AtomicInteger count = new AtomicInteger(0);
         dataStore.storeData(dataConfig, new TestCallback() {
@@ -426,6 +453,13 @@ public class AmazonS3DataStoreTest {
 
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
         scriptMap.put(fessConfig.getIndexFieldUrl(), "object.url");
+        scriptMap.put(fessConfig.getIndexFieldTitle(), "object.key");
+        scriptMap.put(fessConfig.getIndexFieldContent(), "object.contents");
+        scriptMap.put(fessConfig.getIndexFieldMimetype(), "object.mimetype");
+        scriptMap.put(fessConfig.getIndexFieldFiletype(), "object.filetype");
+        scriptMap.put(fessConfig.getIndexFieldFilename(), "object.filename");
+        scriptMap.put(fessConfig.getIndexFieldContentLength(), "object.size");
+        scriptMap.put(fessConfig.getIndexFieldLastModified(), "object.last_modified");
 
         final AtomicInteger count = new AtomicInteger(0);
         dataStore.storeData(dataConfig, new TestCallback() {
