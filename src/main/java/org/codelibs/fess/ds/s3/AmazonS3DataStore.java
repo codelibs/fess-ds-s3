@@ -68,71 +68,184 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.Owner;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
+/**
+ * A data store for crawling and indexing objects stored in Amazon S3 (or S3-compatible storage).
+ *
+ * <p>
+ * This data store lists buckets and their objects, extracts their contents, and stores them via the
+ * {@link IndexUpdateCallback}. Crawling behavior is controlled by the configured {@link DataStoreParams}.
+ * </p>
+ */
 public class AmazonS3DataStore extends AbstractDataStore {
 
     private static final Logger logger = LogManager.getLogger(AmazonS3DataStore.class);
 
+    /**
+     * Creates a new instance.
+     */
+    public AmazonS3DataStore() {
+        // do nothing
+    }
+
+    /** The default maximum number of keys to fetch per request. */
     protected static final int DEFAULT_MAX_KEYS = 1000;
+
+    /** The default maximum object size in bytes (10 MB). */
     protected static final long DEFAULT_MAX_SIZE = 10000000L; // 10m
 
     // parameters
+    /** The parameter name for the maximum number of keys per request. */
     protected static final String MAX_KEYS = "max_keys";
+
+    /** The parameter name for the maximum object size. */
     protected static final String MAX_SIZE = "max_size";
+
+    /** The parameter name for whether to ignore errors. */
     protected static final String IGNORE_ERROR = "ignore_error";
+
+    /** The parameter name for the supported MIME types. */
     protected static final String SUPPORTED_MIMETYPES = "supported_mimetypes";
+
+    /** The parameter name for the URL include pattern. */
     protected static final String INCLUDE_PATTERN = "include_pattern";
+
+    /** The parameter name for the URL exclude pattern. */
     protected static final String EXCLUDE_PATTERN = "exclude_pattern";
+
+    /** The parameter name for the number of crawler threads. */
     protected static final String NUMBER_OF_THREADS = "number_of_threads";
+
+    /** The parameter name for the target bucket names. */
     protected static final String BUCKETS = "buckets";
 
     // scripts
+    /** The script key for the object map. */
     protected static final String OBJECT = "object";
     // - custom
+    /** The script key for the object URL. */
     protected static final String OBJECT_URL = "url";
+
+    /** The script key for the object MIME type. */
     protected static final String OBJECT_MIMETYPE = "mimetype";
+
+    /** The script key for the object file type. */
     protected static final String OBJECT_FILETYPE = "filetype";
+
+    /** The script key for the extracted object contents. */
     protected static final String OBJECT_CONTENTS = "contents";
+
+    /** The script key for the object file name. */
     protected static final String OBJECT_FILENAME = "filename";
+
+    /** The script key for the management console URL. */
     protected static final String OBJECT_MANAGEMENT_URL = "management_url";
     // - bucket(original)
+    /** The script key for the bucket name. */
     protected static final String OBJECT_BUCKET_NAME = "bucket_name";
+
+    /** The script key for the bucket creation date. */
     protected static final String OBJECT_BUCKET_CREATION_DATE = "creation_date";
     // - original
+    /** The script key for the object key. */
     protected static final String OBJECT_KEY = "key";
+
+    /** The script key for the object ETag. */
     protected static final String OBJECT_E_TAG = "e_tag";
+
+    /** The script key for the object last modified date. */
     protected static final String OBJECT_LAST_MODIFIED = "last_modified";
+
+    /** The script key for the object owner ID. */
     protected static final String OBJECT_OWNER_ID = "owner_id";
+
+    /** The script key for the object owner display name. */
     protected static final String OBJECT_OWNER_DISPLAY_NAME = "owner_display_name";
+
+    /** The script key for the object size. */
     protected static final String OBJECT_SIZE = "size";
+
+    /** The script key for the object storage class. */
     protected static final String OBJECT_STORAGE_CLASS = "storage_class";
 
+    /** The script key for the accept-ranges header. */
     protected static final String OBJECT_ACCEPT_RANGES = "accept_ranges";
+
+    /** The script key for the cache-control header. */
     protected static final String OBJECT_CACHE_CONTROL = "cache_control";
+
+    /** The script key for the content-disposition header. */
     protected static final String OBJECT_CONTENT_DISPOSITION = "content_disposition";
+
+    /** The script key for the content-encoding header. */
     protected static final String OBJECT_CONTENT_ENCODING = "content_encoding";
+
+    /** The script key for the content-language header. */
     protected static final String OBJECT_CONTENT_LANGUAGE = "content_language";
+
+    /** The script key for the content-length header. */
     protected static final String OBJECT_CONTENT_LENGTH = "content_length";
+
+    /** The script key for the content-range header. */
     protected static final String OBJECT_CONTENT_RANGE = "content_range";
+
+    /** The script key for the content-type header. */
     protected static final String OBJECT_CONTENT_TYPE = "content_type";
+
+    /** The script key for the delete-marker flag. */
     protected static final String OBJECT_DELETE_MARKER = "delete_marker";
+
+    /** The script key for the object expiration. */
     protected static final String OBJECT_EXPIRATION = "expiration";
+
+    /** The script key for the object expires value. */
     protected static final String OBJECT_EXPIRES = "expires";
+
+    /** The script key for the missing-meta count. */
     protected static final String OBJECT_MISSING_META = "missing_meta";
+
+    /** The script key for the object lock legal hold status. */
     protected static final String OBJECT_OBJECT_LOCK_LEGAL_HOLD_STATUS = "object_lock_legal_hold_status";
+
+    /** The script key for the object lock mode. */
     protected static final String OBJECT_OBJECT_LOCK_MODE = "object_lock_mode";
+
+    /** The script key for the object lock retain-until date. */
     protected static final String OBJECT_OBJECT_LOCK_RETAIN_UNTIL_DATE = "object_lock_retain_until_date";
+
+    /** The script key for the parts count. */
     protected static final String OBJECT_PARTS_COUNT = "parts_count";
+
+    /** The script key for the replication status. */
     protected static final String OBJECT_REPLICATION_STATUS = "replication_status";
+
+    /** The script key for the request-charged value. */
     protected static final String OBJECT_REQUEST_CHARGED = "request_charged";
+
+    /** The script key for the restore status. */
     protected static final String OBJECT_RESTORE = "restore";
+
+    /** The script key for the server-side encryption. */
     protected static final String OBJECT_SERVER_SIDE_ENCRYPTION = "server_side_encryption";
+
+    /** The script key for the SSE customer algorithm. */
     protected static final String OBJECT_SSE_CUSTOMER_ALGORITHM = "sse_customer_algorithm";
+
+    /** The script key for the SSE customer key MD5. */
     protected static final String OBJECT_SSE_CUSTOMER_KEY_MD5 = "sse_customer_key_md5";
+
+    /** The script key for the SSE KMS key ID. */
     protected static final String OBJECT_SSEKMS_KEY_ID = "ssekms_key_id";
+
+    /** The script key for the tag count. */
     protected static final String OBJECT_TAG_COUNT = "tag_count";
+
+    /** The script key for the version ID. */
     protected static final String OBJECT_VERSION_ID = "version_id";
+
+    /** The script key for the website redirect location. */
     protected static final String OBJECT_WEBSITE_REDIRECT_LOCATION = "website_redirect_location";
 
+    /** The name of the extractor used to extract object contents. */
     protected String extractorName = "tikaExtractor";
 
     @Override
@@ -163,6 +276,18 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
+    /**
+     * Crawls the target buckets and submits each object to be stored.
+     *
+     * @param dataConfig the data configuration
+     * @param callback the callback for updating the index
+     * @param paramMap the data store parameters
+     * @param scriptMap the script map for converting values
+     * @param defaultDataMap the default data map
+     * @param config the crawling configuration
+     * @param executorService the executor service for processing objects
+     * @param client the S3 client
+     */
     protected void crawlBuckets(final DataConfig dataConfig, final IndexUpdateCallback callback, final DataStoreParams paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final Config config,
             final ExecutorService executorService, final AmazonS3Client client) {
@@ -188,6 +313,19 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
+    /**
+     * Extracts and stores a single S3 object.
+     *
+     * @param dataConfig the data configuration
+     * @param callback the callback for updating the index
+     * @param paramMap the data store parameters
+     * @param scriptMap the script map for converting values
+     * @param defaultDataMap the default data map
+     * @param config the crawling configuration
+     * @param client the S3 client
+     * @param bucket the bucket containing the object
+     * @param object the object to store
+     */
     protected void storeObject(final DataConfig dataConfig, final IndexUpdateCallback callback, final DataStoreParams paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final Config config, final AmazonS3Client client,
             final Bucket bucket, final S3Object object) {
@@ -287,11 +425,31 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
+    /**
+     * Stores a failure URL when crawling an object fails.
+     *
+     * @param dataConfig the data configuration
+     * @param errorName the name of the error
+     * @param url the URL that failed
+     * @param target the throwable that caused the failure
+     */
     protected void storeFailureUrl(final DataConfig dataConfig, final String errorName, final String url, final Throwable target) {
         final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
         failureUrlService.store(dataConfig, errorName, url, target);
     }
 
+    /**
+     * Builds a map of metadata and extracted contents for the given S3 object.
+     *
+     * @param region the AWS region
+     * @param bucket the bucket containing the object
+     * @param object the S3 object
+     * @param url the URL of the object
+     * @param stream the response input stream for the object
+     * @param ignoreError whether to ignore content extraction errors
+     * @return a map of object metadata and contents
+     * @throws URISyntaxException if a URL cannot be constructed
+     */
     protected Map<String, Object> getObjectMap(final String region, final Bucket bucket, final S3Object object, final String url,
             final ResponseInputStream<GetObjectResponse> stream, final boolean ignoreError) throws URISyntaxException {
         final Map<String, Object> map = new HashMap<>();
@@ -363,6 +521,14 @@ public class AmazonS3DataStore extends AbstractDataStore {
         return map;
     }
 
+    /**
+     * Determines the MIME type of the given content.
+     *
+     * @param filename the file name used as a hint
+     * @param out the buffered content
+     * @return the detected MIME type
+     * @throws IOException if the content cannot be read
+     */
     protected String getMimeType(final String filename, final DeferredFileOutputStream out) throws IOException {
         final MimeTypeHelper mimeTypeHelper = ComponentUtil.getComponent(MimeTypeHelper.class);
         try (InputStream is = getContentInputStream(out)) {
@@ -370,6 +536,13 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
+    /**
+     * Returns an input stream for reading the given buffered content.
+     *
+     * @param out the buffered content
+     * @return an input stream over the content, either in-memory or file-backed
+     * @throws IOException if the content cannot be read
+     */
     protected InputStream getContentInputStream(final DeferredFileOutputStream out) throws IOException {
         if (out.isInMemory()) {
             return new ByteArrayInputStream(out.getData());
@@ -377,6 +550,16 @@ public class AmazonS3DataStore extends AbstractDataStore {
         return new FileInputStream(out.getFile());
     }
 
+    /**
+     * Extracts text contents from the given input stream.
+     *
+     * @param in the input stream of the object contents
+     * @param contentType the MIME type of the contents
+     * @param key the key of the object
+     * @param url the URL of the object
+     * @param ignoreError whether to ignore extraction errors
+     * @return the extracted text contents, or an empty string if extraction fails and errors are ignored
+     */
     protected String getObjectContents(final InputStream in, final String contentType, final String key, final String url,
             final boolean ignoreError) {
         try {
@@ -399,6 +582,16 @@ public class AmazonS3DataStore extends AbstractDataStore {
         }
     }
 
+    /**
+     * Builds the URL for the given object.
+     *
+     * @param endpoint the S3 endpoint override, or {@code null} for AWS
+     * @param region the AWS region
+     * @param bucket the name of the bucket
+     * @param object the key of the object
+     * @return the object URL
+     * @throws URISyntaxException if the URL cannot be constructed
+     */
     protected String getUrl(final String endpoint, final String region, final String bucket, final String object)
             throws URISyntaxException {
         if (Objects.nonNull(endpoint)) {
@@ -409,15 +602,36 @@ public class AmazonS3DataStore extends AbstractDataStore {
         return new URI("https", bucket + ".s3." + region + ".amazonaws.com", "/" + object, null).toASCIIString();
     }
 
+    /**
+     * Builds the AWS management console URL for the given object.
+     *
+     * @param region the AWS region
+     * @param bucket the name of the bucket
+     * @param object the key of the object
+     * @return the management console URL
+     * @throws URISyntaxException if the URL cannot be constructed
+     */
     protected String getManagementUrl(final String region, final String bucket, final String object) throws URISyntaxException {
         return new URI("https", "s3.console.aws.amazon.com", "/s3/object/" + bucket + "/" + object, "region=" + region, null)
                 .toASCIIString();
     }
 
+    /**
+     * Converts the given instant to a {@link Date}.
+     *
+     * @param instant the instant to convert, may be {@code null}
+     * @return the corresponding date, or {@code null} if the instant is {@code null}
+     */
     protected Date toDate(final Instant instant) {
         return Objects.nonNull(instant) ? Date.from(instant) : null;
     }
 
+    /**
+     * Creates a fixed-size thread pool for processing objects.
+     *
+     * @param nThreads the number of threads
+     * @return a new executor service
+     */
     protected ExecutorService newFixedThreadPool(final int nThreads) {
         if (logger.isDebugEnabled()) {
             logger.debug("Executor Thread Pool: {}", nThreads);
@@ -426,10 +640,19 @@ public class AmazonS3DataStore extends AbstractDataStore {
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
+    /**
+     * Creates an S3 client from the given parameters.
+     *
+     * @param paramMap the data store parameters
+     * @return a new S3 client
+     */
     protected AmazonS3Client createClient(final DataStoreParams paramMap) {
         return new AmazonS3Client(paramMap);
     }
 
+    /**
+     * Holds the crawling configuration derived from the data store parameters.
+     */
     protected static class Config {
         final int maxKeys;
         final long maxSize;

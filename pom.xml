@@ -60,6 +60,21 @@
 				<groupId>net.revelc.code.formatter</groupId>
 				<artifactId>formatter-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<!--
+						Pin the Docker Remote API version used by Testcontainers/docker-java.
+						docker-java probes the daemon with API v1.32 by default, which newer
+						Docker Engines (29+, minimum API 1.40) reject with HTTP 400. 1.40 is
+						supported by Docker 19.03 and later, keeping broad compatibility.
+					-->
+					<systemPropertyVariables>
+						<api.version>1.40</api.version>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 	<repositories>
