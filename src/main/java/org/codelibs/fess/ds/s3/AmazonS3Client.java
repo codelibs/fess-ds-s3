@@ -42,28 +42,61 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
+/**
+ * A client wrapper for accessing Amazon S3 (or S3-compatible storage).
+ *
+ * <p>
+ * This class builds an {@link S3Client} from the given {@link DataStoreParams} and provides convenience methods
+ * for listing buckets and objects and retrieving object contents.
+ * </p>
+ */
 public class AmazonS3Client implements AutoCloseable {
 
     private static final Logger logger = LogManager.getLogger(AmazonS3Client.class);
 
     // parameters for authentication
+    /** The parameter name for the AWS region. */
     protected static final String REGION = "region";
+
+    /** The parameter name for the AWS access key ID. */
     protected static final String ACCESS_KEY_ID = "access_key_id";
+
+    /** The parameter name for the AWS secret access key. */
     protected static final String SECRET_KEY = "secret_key";
+
+    /** The parameter name for the S3 endpoint override. */
     protected static final String ENDPOINT = "endpoint";
+
+    /** The parameter name for the proxy host. */
     protected static final String PROXY_HOST_PARAM = "proxy_host";
+
+    /** The parameter name for the proxy port. */
     protected static final String PROXY_PORT_PARAM = "proxy_port";
 
     // other parameters
+    /** The parameter name for the maximum cached content size. */
     protected static final String MAX_CACHED_CONTENT_SIZE = "max_cached_content_size";
 
+    /** The data store parameters used to configure this client. */
     protected final DataStoreParams params;
 
+    /** The underlying S3 client. */
     protected final S3Client client;
+
+    /** The AWS region. */
     protected final Region region;
+
+    /** The S3 endpoint override, or {@code null} if not set. */
     protected final String endpoint;
+
+    /** The maximum cached content size in bytes. */
     protected int maxCachedContentSize = 1024 * 1024;
 
+    /**
+     * Creates a new client from the given data store parameters.
+     *
+     * @param params the data store parameters used to configure the client
+     */
     public AmazonS3Client(final DataStoreParams params) {
         this.params = params;
         final String size = params.getAsString(MAX_CACHED_CONTENT_SIZE);
@@ -113,27 +146,61 @@ public class AmazonS3Client implements AutoCloseable {
 
     }
 
+    /**
+     * Returns the AWS region of this client.
+     *
+     * @return the AWS region
+     */
     public Region getRegion() {
         return region;
     }
 
+    /**
+     * Returns the S3 endpoint override of this client.
+     *
+     * @return the endpoint, or {@code null} if not set
+     */
     public String getEndpoint() {
         return endpoint;
     }
 
+    /**
+     * Applies the given consumer to each bucket whose name is contained in the given names.
+     *
+     * @param bucketNames the names of the buckets to retrieve
+     * @param consumer the consumer applied to each matching bucket
+     */
     public void getBuckets(final String[] bucketNames, final Consumer<Bucket> consumer) {
         final Set<String> names = Arrays.stream(bucketNames).collect(Collectors.toSet());
         client.listBuckets().buckets().stream().filter(bucket -> names.contains(bucket.name())).forEach(consumer);
     }
 
+    /**
+     * Applies the given consumer to every bucket accessible by this client.
+     *
+     * @param consumer the consumer applied to each bucket
+     */
     public void getBuckets(final Consumer<Bucket> consumer) {
         client.listBuckets().buckets().forEach(consumer);
     }
 
+    /**
+     * Applies the given consumer to each object in the given bucket using the default page size.
+     *
+     * @param bucket the name of the bucket
+     * @param consumer the consumer applied to each object
+     */
     public void getObjects(final String bucket, final Consumer<S3Object> consumer) {
         getObjects(bucket, 1000, consumer);
     }
 
+    /**
+     * Applies the given consumer to each object in the given bucket, paging through results.
+     *
+     * @param bucket the name of the bucket
+     * @param maxKeys the maximum number of keys to fetch per request
+     * @param consumer the consumer applied to each object
+     */
     public void getObjects(final String bucket, final int maxKeys, final Consumer<S3Object> consumer) {
         ListObjectsV2Response response = client.listObjectsV2(builder -> builder.bucket(bucket).fetchOwner(true).maxKeys(maxKeys).build());
         while (true) {
@@ -147,6 +214,13 @@ public class AmazonS3Client implements AutoCloseable {
         }
     }
 
+    /**
+     * Retrieves the object identified by the given bucket and key.
+     *
+     * @param bucket the name of the bucket
+     * @param key the key of the object
+     * @return a response input stream for reading the object contents
+     */
     public ResponseInputStream<GetObjectResponse> getObject(final String bucket, final String key) {
         return client.getObject(builder -> builder.bucket(bucket).key(key).build());
     }
